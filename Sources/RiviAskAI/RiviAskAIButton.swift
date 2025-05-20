@@ -8,15 +8,29 @@ public struct RiviAskAIButton: View {
     /// - Parameters:
     ///   - buttonLabel: Text to display on the main button
     ///   - accentColor: Color for the AI icon and button accents
-    ///   - onImproveResults: Closure called when the user taps "Improve Results"
+    ///   - itineraryId: Optional itinerary ID for SSE subscription
+    ///   - baseURL: Base URL for the SSE API
+    ///   - onEvent: Closure called when SSE events are received
     public init(
         buttonLabel: String = "Ask AI",
         accentColor: Color = .blue,
-        onImproveResults: @escaping () -> Void
+        itineraryId: String?,
+        baseURL: String = "https://filter-gateway-service.rivi.co/api/v1",
+        onEvent: ((RiviAskAIEvent) -> Void)?
     ) {
         _viewModel = StateObject(
             wrappedValue: RiviAskAIViewModel(
-                onImproveResults: onImproveResults
+                itineraryId: itineraryId,
+                baseURL: baseURL,
+                filterSearchParams: FilterSearchParams(
+                    destination: "Delhi",
+                    checkin: "2025-07-01",
+                    checkout: "2025-07-02",
+                    adult: 1,
+                    rooms: 1,
+                    queryType: "hotel"
+                ),
+                onEvent: onEvent
             )
         )
         self.buttonLabel = buttonLabel
@@ -87,7 +101,11 @@ public struct RiviAskAIButton: View {
             }
             
             // Text input
-            TextField("e.g. Hotels with pool near the beach", text: $viewModel.inputText, axis: .vertical)
+            TextField(
+                "e.g. Hotels with pool near the beach",
+                text: $viewModel.inputText,
+                axis: .vertical
+            )
                 .lineLimit(4, reservesSpace: true)
                 .padding()
                 .clipShape(RoundedRectangle(cornerRadius: 10))

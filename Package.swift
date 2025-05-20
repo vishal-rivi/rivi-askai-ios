@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "RiviAskAI",
     platforms: [
-        .iOS(.v17), // Requires iOS 17.0 or later
+        .iOS(.v15), // Requires iOS 15.0 or later
         .macOS(.v12) // Requires macOS 12.0 or later
     ],
     products: [

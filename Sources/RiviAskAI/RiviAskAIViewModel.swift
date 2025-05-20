@@ -1,5 +1,53 @@
 import SwiftUI
 
+/// Event type for SSE responses
+public enum RiviAskAIEvent {
+    /// Received data from the SSE connection
+    case data(String)
+    /// Error occurred during the SSE connection
+    case error(Error)
+    /// Connection closed or disconnected
+    case disconnected
+    /// Filter search API call completed
+    case filterSearchCompleted
+}
+
+/// Filter search request parameters
+public struct FilterSearchParams {
+    /// The filter query string
+    public let filterQuery: String
+    /// The destination city
+    public let destination: String
+    /// Check-in date (format: YYYY-MM-DD)
+    public let checkin: String
+    /// Check-out date (format: YYYY-MM-DD)
+    public let checkout: String
+    /// Number of adults
+    public let adult: Int
+    /// Number of rooms
+    public let rooms: Int
+    /// Type of query (e.g., "hotel")
+    public let queryType: String
+    
+    /// Initialize with all required parameters for a filter search
+    public init(
+        destination: String,
+        checkin: String,
+        checkout: String,
+        adult: Int = 1,
+        rooms: Int = 1,
+        queryType: String = "hotel"
+    ) {
+        self.filterQuery = ""
+        self.destination = destination
+        self.checkin = checkin
+        self.checkout = checkout
+        self.adult = adult
+        self.rooms = rooms
+        self.queryType = queryType
+    }
+}
+
 /// ViewModel that manages the state and logic for the RiviAskAIButton
 public class RiviAskAIViewModel: ObservableObject {
     /// Whether the popup is currently visible
@@ -8,14 +56,141 @@ public class RiviAskAIViewModel: ObservableObject {
     /// The current text input
     @Published public var inputText = ""
     
-    /// Closure called when the user taps the "Improve Results" button
-    public let onImproveResults: () -> Void
+    /// The SSE client for handling events
+    private var sseClient: SSEClient?
+    
+    /// The itinerary ID for the SSE connection
+    private let itineraryId: String?
+    
+    /// Base URL for the SSE API
+    private let baseURL: String
+    
+    /// Filter search parameters
+    private let filterSearchParams: FilterSearchParams?
+    
+    /// Closure called when SSE events are received
+    public let onEvent: ((RiviAskAIEvent) -> Void)?
     
     /// Initialize the view model
     /// - Parameters:
-    ///   - onImproveResults: Closure called when the user taps "Improve Results"
-    public init(onImproveResults: @escaping () -> Void) {
-        self.onImproveResults = onImproveResults
+    ///   - itineraryId: Optional itinerary ID for the SSE connection
+    ///   - baseURL: Base URL for the SSE API
+    ///   - filterSearchParams: Parameters for filter search API
+    ///   - onEvent: Closure called when SSE events are received
+    public init(
+        itineraryId: String?,
+        baseURL: String = "https://filter-gateway-service.rivi.co/api/v1",
+        filterSearchParams: FilterSearchParams? = nil,
+        onEvent: ((RiviAskAIEvent) -> Void)?
+    ) {
+        self.itineraryId = itineraryId
+        self.baseURL = baseURL
+        self.filterSearchParams = filterSearchParams
+        self.onEvent = onEvent
+        
+        setupSSEConnectionIfNeeded()
+    }
+    
+    private func setupSSEConnectionIfNeeded() {
+        guard let itineraryId = itineraryId, let onEvent = onEvent else {
+            return
+        }
+        
+        let urlString = "\(baseURL)/subscribe?itineraryId=\(itineraryId)"
+        guard let url = URL(string: urlString) else {
+            onEvent(.error(NSError(domain: "RiviAskAI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            return
+        }
+        
+        sseClient = SSEClient()
+        sseClient?.connect(
+            to: url,
+            onEvent: { [weak self] data in
+                DispatchQueue.main.async {
+                    onEvent(.data(data))
+                }
+            },
+            onError: { [weak self] error in
+                DispatchQueue.main.async {
+                    onEvent(.error(error))
+                }
+            }
+        )
+    }
+    
+    /// Call the filter search API
+    private func callFilterSearchAPI() {
+        guard let itineraryId = itineraryId, 
+              let filterSearchParams = filterSearchParams else {
+            return
+        }
+        
+        // Create the URL request
+        let urlString = "\(baseURL)/filter-search"
+        guard let url = URL(string: urlString) else {
+            onEvent?(.error(NSError(domain: "RiviAskAI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Create request body
+        let filterQuery = inputText.isEmpty ? filterSearchParams.filterQuery : inputText
+        let requestBody: [String: Any] = [
+            "filter_query": filterQuery,
+            "itinerary_id": itineraryId,
+            "destination": filterSearchParams.destination,
+            "checkin": filterSearchParams.checkin,
+            "checkout": filterSearchParams.checkout,
+            "adult": filterSearchParams.adult,
+            "rooms": filterSearchParams.rooms,
+            "query_type": filterSearchParams.queryType
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        } catch {
+            onEvent?(.error(error))
+            return
+        }
+        
+        // Create and start the task
+        let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            if let error = error {
+                DispatchQueue.main.async {
+                    self?.onEvent?(.error(error))
+                }
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                let error = NSError(
+                    domain: "RiviAskAI",
+                    code: (response as? HTTPURLResponse)?.statusCode ?? 0,
+                    userInfo: [NSLocalizedDescriptionKey: "HTTP error"]
+                )
+                
+                DispatchQueue.main.async {
+                    self?.onEvent?(.error(error))
+                }
+                return
+            }
+            
+            // Notify that the filter search was completed successfully
+            DispatchQueue.main.async {
+                self?.onEvent?(.filterSearchCompleted)
+            }
+        }
+        
+        task.resume()
+    }
+    
+    deinit {
+        sseClient?.disconnect()
+        onEvent?(.disconnected)
     }
     
     /// Toggle the popup visibility
@@ -31,7 +206,7 @@ public class RiviAskAIViewModel: ObservableObject {
     
     /// Call the improve results closure and close the popup
     public func improveResults() {
-        onImproveResults()
+        callFilterSearchAPI()
         isPopupVisible = false
     }
 } 
