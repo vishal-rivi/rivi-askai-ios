@@ -8,28 +8,19 @@ public struct RiviAskAIButton: View {
     /// - Parameters:
     ///   - buttonLabel: Text to display on the main button
     ///   - accentColor: Color for the AI icon and button accents
-    ///   - itineraryId: Optional itinerary ID for SSE subscription
     ///   - baseURL: Base URL for the SSE API
     ///   - onEvent: Closure called when SSE events are received
     public init(
         buttonLabel: String = "Ask AI",
         accentColor: Color = .blue,
-        itineraryId: String?,
         baseURL: String = "https://filter-gateway-service.rivi.co/api/v1",
+        filterSearchParams: FilterSearchParams,
         onEvent: ((RiviAskAIEvent) -> Void)?
     ) {
         _viewModel = StateObject(
             wrappedValue: RiviAskAIViewModel(
-                itineraryId: itineraryId,
                 baseURL: baseURL,
-                filterSearchParams: FilterSearchParams(
-                    destination: "Delhi",
-                    checkin: "2025-07-01",
-                    checkout: "2025-07-02",
-                    adult: 1,
-                    rooms: 1,
-                    queryType: "hotel"
-                ),
+                filterSearchParams: filterSearchParams,
                 onEvent: onEvent
             )
         )
@@ -46,9 +37,12 @@ public struct RiviAskAIButton: View {
             viewModel.togglePopup()
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: "sparkle")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(accentColor)
+                Image("ic_sparkle", bundle: .module)
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20, height: 20)
+                    .foregroundStyle(accentColor)
                 
                 Text(buttonLabel)
                     .font(.system(size: 16, weight: .medium))
@@ -65,13 +59,19 @@ public struct RiviAskAIButton: View {
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $viewModel.isPopupVisible) {
-            popupContent
-                .padding()
-                .readSize(onChange: { size in
-                    popupContentHeight = size.height
-                })
-                .presentationDetents([.height(popupContentHeight)])
-                .presentationDragIndicator(.visible)
+            if #available(iOS 16.0, *) {
+                popupContent
+                    .padding()
+                    .readSize(onChange: { size in
+                        popupContentHeight = size.height
+                    })
+                    .presentationDetents([.height(popupContentHeight)])
+                    .presentationDragIndicator(.hidden)
+            } else {
+                // Fallback on earlier versions
+                popupContent
+                    .padding()
+            }
         }
         // .popover(isPresented: $viewModel.isPopupVisible) {
         //     popupContent
@@ -84,8 +84,12 @@ public struct RiviAskAIButton: View {
         VStack(alignment: .leading, spacing: 16) {
             // Header
             HStack {
-                Image(systemName: "sparkle")
-                    .foregroundColor(accentColor)
+                Image("ic_sparkle", bundle: .module)
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20, height: 20)
+                    .foregroundStyle(accentColor)
                 
                 Text("Ask AI")
                     .font(.headline)
@@ -101,11 +105,12 @@ public struct RiviAskAIButton: View {
             }
             
             // Text input
-            TextField(
-                "e.g. Hotels with pool near the beach",
-                text: $viewModel.inputText,
-                axis: .vertical
-            )
+            if #available(iOS 16.0, *) {
+                TextField(
+                    "e.g. Hotels with pool near the beach",
+                    text: $viewModel.inputText,
+                    axis: .vertical
+                )
                 .lineLimit(4, reservesSpace: true)
                 .padding()
                 .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -113,23 +118,39 @@ public struct RiviAskAIButton: View {
                     RoundedRectangle(cornerRadius: 10)
                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                 )
+            } else {
+                // Fallback on earlier versions
+                TextField(
+                    "e.g. Hotels with pool near the beach",
+                    text: $viewModel.inputText
+                )
+                .lineLimit(4)
+                .padding()
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                )
+            }
             
-            // Footer
-            HStack {
-                Spacer()
+            Button {
+                viewModel.improveResults()
+            } label: {
+                Text("Improve Results")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(accentColor)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .frame(height: 46)
+            .background(accentColor.opacity(0.12))
+            .clipShape(Capsule())
+            
+            if #available(iOS 16.0, *) {
                 
-                Button {
-                    viewModel.improveResults()
-                } label: {
-                    Text("Improve Results")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(accentColor)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .background(accentColor.opacity(0.12))
-                        .cornerRadius(20)
-                }
-                .buttonStyle(PlainButtonStyle())
+            } else {
+                // Fallback on earlier versions
+                Spacer()
             }
         }
     }

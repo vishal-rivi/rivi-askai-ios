@@ -1,53 +1,5 @@
 import SwiftUI
 
-/// Event type for SSE responses
-public enum RiviAskAIEvent {
-    /// Received data from the SSE connection
-    case data(String)
-    /// Error occurred during the SSE connection
-    case error(Error)
-    /// Connection closed or disconnected
-    case disconnected
-    /// Filter search API call completed
-    case filterSearchCompleted
-}
-
-/// Filter search request parameters
-public struct FilterSearchParams {
-    /// The filter query string
-    public let filterQuery: String
-    /// The destination city
-    public let destination: String
-    /// Check-in date (format: YYYY-MM-DD)
-    public let checkin: String
-    /// Check-out date (format: YYYY-MM-DD)
-    public let checkout: String
-    /// Number of adults
-    public let adult: Int
-    /// Number of rooms
-    public let rooms: Int
-    /// Type of query (e.g., "hotel")
-    public let queryType: String
-    
-    /// Initialize with all required parameters for a filter search
-    public init(
-        destination: String,
-        checkin: String,
-        checkout: String,
-        adult: Int = 1,
-        rooms: Int = 1,
-        queryType: String = "hotel"
-    ) {
-        self.filterQuery = ""
-        self.destination = destination
-        self.checkin = checkin
-        self.checkout = checkout
-        self.adult = adult
-        self.rooms = rooms
-        self.queryType = queryType
-    }
-}
-
 /// ViewModel that manages the state and logic for the RiviAskAIButton
 public class RiviAskAIViewModel: ObservableObject {
     /// Whether the popup is currently visible
@@ -58,9 +10,6 @@ public class RiviAskAIViewModel: ObservableObject {
     
     /// The SSE client for handling events
     private var sseClient: SSEClient?
-    
-    /// The itinerary ID for the SSE connection
-    private let itineraryId: String?
     
     /// Base URL for the SSE API
     private let baseURL: String
@@ -73,17 +22,14 @@ public class RiviAskAIViewModel: ObservableObject {
     
     /// Initialize the view model
     /// - Parameters:
-    ///   - itineraryId: Optional itinerary ID for the SSE connection
     ///   - baseURL: Base URL for the SSE API
     ///   - filterSearchParams: Parameters for filter search API
     ///   - onEvent: Closure called when SSE events are received
     public init(
-        itineraryId: String?,
         baseURL: String = "https://filter-gateway-service.rivi.co/api/v1",
         filterSearchParams: FilterSearchParams? = nil,
         onEvent: ((RiviAskAIEvent) -> Void)?
     ) {
-        self.itineraryId = itineraryId
         self.baseURL = baseURL
         self.filterSearchParams = filterSearchParams
         self.onEvent = onEvent
@@ -92,7 +38,7 @@ public class RiviAskAIViewModel: ObservableObject {
     }
     
     private func setupSSEConnectionIfNeeded() {
-        guard let itineraryId = itineraryId, let onEvent = onEvent else {
+        guard let itineraryId = filterSearchParams?.itineraryId, let onEvent = onEvent else {
             return
         }
         
@@ -120,7 +66,7 @@ public class RiviAskAIViewModel: ObservableObject {
     
     /// Call the filter search API
     private func callFilterSearchAPI() {
-        guard let itineraryId = itineraryId, 
+        guard let itineraryId = filterSearchParams?.itineraryId,
               let filterSearchParams = filterSearchParams else {
             return
         }
