@@ -18,6 +18,10 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "RiviAskAI"),
+            name: "RiviAskAI",
+            resources: [
+                .process("Resources/Assets.xcassets")
+            ]
+        ),
     ]
 )

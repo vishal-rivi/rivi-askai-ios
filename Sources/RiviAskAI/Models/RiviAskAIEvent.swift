@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// Event type for SSE responses
 public enum RiviAskAIEvent {
@@ -10,4 +11,8 @@ public enum RiviAskAIEvent {
     case disconnected
     /// Filter search API call completed
     case filterSearchCompleted
+    /// Chips extracted from the SSE data
+    case chipsExtracted(Set<String>)
+    /// Flight response received from SSE
+    case flightResponse(FlightResponse)
 }

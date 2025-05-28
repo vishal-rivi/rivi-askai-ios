@@ -7,29 +7,28 @@ public struct RiviAskAIButton: View {
     /// Initialize an Ask AI button with custom configuration
     /// - Parameters:
     ///   - buttonLabel: Text to display on the main button
-    ///   - accentColor: Color for the AI icon and button accents
-    ///   - baseURL: Base URL for the SSE API
+    ///   - theme: Theme to customize the appearance
+    ///   - filterSearchParams: Parameters for filter search
     ///   - onEvent: Closure called when SSE events are received
     public init(
         buttonLabel: String = "Ask AI",
-        accentColor: Color = .blue,
-        baseURL: String = "https://filter-gateway-service.rivi.co/api/v1",
-        filterSearchParams: FilterSearchParams,
-        onEvent: ((RiviAskAIEvent) -> Void)?
+        theme: RiviAskAITheme = .default,
+        filterSearchParams: FilterSearchParams? = nil,
+        onEvent: @escaping ((RiviAskAIEvent) -> Void)
     ) {
         _viewModel = StateObject(
             wrappedValue: RiviAskAIViewModel(
-                baseURL: baseURL,
+                apiService: RiviAskAIService(baseURL: "http://34.48.22.18:9000/api/v1"),
                 filterSearchParams: filterSearchParams,
                 onEvent: onEvent
             )
         )
         self.buttonLabel = buttonLabel
-        self.accentColor = accentColor
+        self.theme = theme
     }
     
     private let buttonLabel: String
-    private let accentColor: Color
+    private let theme: RiviAskAITheme
     @State private var popupContentHeight: CGFloat = 0
     
     public var body: some View {
@@ -41,21 +40,21 @@ public struct RiviAskAIButton: View {
                     .renderingMode(.template)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 20, height: 20)
-                    .foregroundStyle(accentColor)
+                    .frame(width: 22, height: 22)
+                    .foregroundColor(theme.accentColor)
                 
                 Text(buttonLabel)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(accentColor)
+                    .font(theme.bodyFont())
+                    .foregroundColor(theme.accentColor)
                 
                 Image(systemName: viewModel.isPopupVisible ? "chevron.up" : "chevron.down")
                     .font(.system(size: 12))
-                    .foregroundColor(accentColor.opacity(0.7))
+                    .foregroundColor(theme.accentColor)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(accentColor.opacity(0.12))
-            .cornerRadius(20)
+            .background(theme.buttonBackgroundColor)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $viewModel.isPopupVisible) {
@@ -67,10 +66,12 @@ public struct RiviAskAIButton: View {
                     })
                     .presentationDetents([.height(popupContentHeight)])
                     .presentationDragIndicator(.hidden)
+                    .background(theme.popupBackgroundColor)
             } else {
                 // Fallback on earlier versions
                 popupContent
                     .padding()
+                    .background(theme.popupBackgroundColor)
             }
         }
         // .popover(isPresented: $viewModel.isPopupVisible) {
@@ -89,10 +90,11 @@ public struct RiviAskAIButton: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 20, height: 20)
-                    .foregroundStyle(accentColor)
+                    .foregroundStyle(theme.accentColor)
                 
                 Text("Ask AI")
-                    .font(.headline)
+                    .font(theme.titleFont())
+                    .foregroundColor(theme.popupHeaderTextColor)
                 
                 Spacer()
                 
@@ -100,36 +102,46 @@ public struct RiviAskAIButton: View {
                     viewModel.togglePopup()
                 } label: {
                     Image(systemName: "xmark")
-                        .foregroundColor(.gray)
+                        .foregroundColor(theme.closeButtonColor)
                 }
             }
             
             // Text input
             if #available(iOS 16.0, *) {
                 TextField(
-                    "e.g. Hotels with pool near the beach",
+                    "e.g. Flights under $400 with morning arrival",
                     text: $viewModel.inputText,
                     axis: .vertical
                 )
+                .tint(theme.accentColor)
+                .font(theme.bodyFont())
+                .foregroundColor(theme.inputTextColor)
                 .lineLimit(4, reservesSpace: true)
                 .padding()
+                .foregroundColor(theme.inputTextColor)
+                .background(theme.inputBackgroundColor)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        .stroke(theme.inputBorderColor, lineWidth: 1)
                 )
             } else {
                 // Fallback on earlier versions
                 TextField(
-                    "e.g. Hotels with pool near the beach",
+                    "e.g. Flights under $400 with morning arrival",
                     text: $viewModel.inputText
                 )
+                .tint(theme.accentColor)
+                .font(theme.bodyFont())
+                .foregroundColor(theme.inputTextColor)
                 .lineLimit(4)
                 .padding()
+                .foregroundColor(theme.inputTextColor)
+                .background(theme.inputBackgroundColor)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        .stroke(theme.inputBorderColor, lineWidth: 1)
                 )
             }
             
@@ -137,13 +149,13 @@ public struct RiviAskAIButton: View {
                 viewModel.improveResults()
             } label: {
                 Text("Improve Results")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(accentColor)
+                    .font(theme.buttonFont())
+                    .foregroundStyle(theme.accentColor)
                     .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .center)
             }
             .frame(height: 46)
-            .background(accentColor.opacity(0.12))
+            .background(theme.buttonBackgroundColor)
             .clipShape(Capsule())
             
             if #available(iOS 16.0, *) {
