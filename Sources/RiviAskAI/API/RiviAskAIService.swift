@@ -184,22 +184,22 @@ public class RiviAskAIService: RiviAskAIServiceProtocol {
         request.setValue(authToken, forHTTPHeaderField: "authorization")
         
         RiviAskAILogger.logSSEConnection(searchId: searchId, event: "connect")
-        print("===== CONNECTING TO SSE =====")
-        print("URL: \(urlString)")
-        print("Search ID: \(searchId)")
-        print("==========================")
+//        print("===== CONNECTING TO SSE =====")
+//        print("URL: \(urlString)")
+//        print("Search ID: \(searchId)")
+//        print("==========================")
         
         sseClient?.connect(to: url, request: request, onEvent: { eventData in
             RiviAskAILogger.logSSEEvent(data: eventData)
-            print("===== SSE EVENT RECEIVED =====")
-            print(eventData)
-            print("=============================")
+//            print("===== SSE EVENT RECEIVED =====")
+//            print(eventData)
+//            print("=============================")
             onEvent(eventData)
         }, onError: { error in
             RiviAskAILogger.logError("SSE connection error", error: error)
-            print("===== SSE ERROR =====")
-            print(error.localizedDescription)
-            print("====================")
+//            print("===== SSE ERROR =====")
+//            print(error.localizedDescription)
+//            print("====================")
             onError(error)
         })
     }

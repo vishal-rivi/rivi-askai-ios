@@ -13,6 +13,4 @@ public enum RiviAskAIEvent {
     case filterSearchCompleted
     /// Chips extracted from the SSE data
     case chipsExtracted(Set<String>)
-    /// Flight response received from SSE
-    case flightResponse(FlightResponse)
 }

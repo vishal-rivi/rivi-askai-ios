@@ -10,17 +10,27 @@ public struct RiviAskAIButton: View {
     ///   - theme: Theme to customize the appearance
     ///   - filterSearchParams: Parameters for filter search
     ///   - onEvent: Closure called when SSE events are received
+    ///   - onChipsExtracted: Closure called when chips are extracted from the filterSearch API
     public init(
         buttonLabel: String = "Ask AI",
         theme: RiviAskAITheme = .default,
         filterSearchParams: FilterSearchParams? = nil,
-        onEvent: @escaping ((RiviAskAIEvent) -> Void)
+        onEvent: @escaping ((RiviAskAIEvent) -> Void),
+        onChipsExtracted: ((Set<String>) -> Void)? = nil
     ) {
         _viewModel = StateObject(
             wrappedValue: RiviAskAIViewModel(
                 apiService: RiviAskAIService(baseURL: "http://34.48.22.18:9000/api/v1"),
                 filterSearchParams: filterSearchParams,
-                onEvent: onEvent
+                onEvent: { event in
+                    // Handle chip extraction separately
+                    if case let .chipsExtracted(extractedChips) = event, let onChipsExtracted = onChipsExtracted {
+                        onChipsExtracted(extractedChips)
+                    }
+                    
+                    // Forward all events to the original handler
+                    onEvent(event)
+                }
             )
         )
         self.buttonLabel = buttonLabel
@@ -55,6 +65,10 @@ public struct RiviAskAIButton: View {
             .padding(.vertical, 10)
             .background(theme.buttonBackgroundColor)
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(theme.inputBorderColor, lineWidth: 1)
+            )
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $viewModel.isPopupVisible) {

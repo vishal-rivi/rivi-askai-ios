@@ -5,20 +5,24 @@ public struct RiviChipsView: View {
     @Binding private var chips: Set<String>
     private let theme: RiviAskAITheme
     private let onRemoveChip: ((String) -> Void)?
+    private let onCallFilterSearch: ((String) -> Void)?
     
     /// Initialize a chips view with custom configuration
     /// - Parameters:
     ///   - chips: The collection of chips to display
     ///   - theme: Theme to customize the appearance
     ///   - onRemoveChip: Closure called when a chip is removed
+    ///   - onCallFilterSearch: Closure called to trigger filter search with remaining chips
     public init(
         chips: Binding<Set<String>>,
         theme: RiviAskAITheme = .default,
-        onRemoveChip: ((String) -> Void)? = nil
+        onRemoveChip: ((String) -> Void)? = nil,
+        onCallFilterSearch: ((String) -> Void)? = nil
     ) {
         self._chips = chips
         self.theme = theme
         self.onRemoveChip = onRemoveChip
+        self.onCallFilterSearch = onCallFilterSearch
     }
     
     public var body: some View {
@@ -44,6 +48,12 @@ public struct RiviChipsView: View {
     private func removeChip(_ chip: String) {
         chips.remove(chip)
         onRemoveChip?(chip)
+        
+        // Call filter search with remaining chips if available
+        if !chips.isEmpty, let onCallFilterSearch = onCallFilterSearch {
+            let query = chips.joined(separator: ", ")
+            onCallFilterSearch(query)
+        }
     }
 }
 

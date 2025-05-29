@@ -22,12 +22,3 @@ public struct RiviAskAI {
         RiviAskAILogger.logLevel = logLevel
     }
 }
-
-// Export public components
-@available(iOS 14.0, *)
-public struct RiviAskAISwiftUI {
-    /// Example view showing how to use the RiviAskAI API
-    public static func createExampleView() -> some View {
-        FlightFilterExampleView()
-    }
-} 

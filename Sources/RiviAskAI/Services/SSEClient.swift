@@ -64,9 +64,9 @@ public class SSEClient {
     func processData(_ data: Data) {
         guard let dataString = String(data: data, encoding: .utf8) else {
             RiviAskAILogger.log("Received non-UTF8 data", level: .warning)
-            print("===== SSE RECEIVED NON-UTF8 DATA =====")
-            print("Data bytes: \(data.count)")
-            print("===================================")
+//            print("===== SSE RECEIVED NON-UTF8 DATA =====")
+//            print("Data bytes: \(data.count)")
+//            print("===================================")
             return
         }
             
@@ -84,9 +84,9 @@ public class SSEClient {
             if !eventString.isEmpty {
                 let truncatedString = eventString.count > 100 ? eventString.prefix(100) + "..." : eventString
                 RiviAskAILogger.log("Received SSE event: \(truncatedString)", level: .debug)
-                print("===== SSE EVENT PROCESSED =====")
-                print("Event: \(eventString)")
-                print("============================")
+//                print("===== SSE EVENT PROCESSED =====")
+//                print("Event: \(eventString)")
+//                print("============================")
                 DispatchQueue.main.async { [weak self] in
                     self?.eventHandler?(eventString)
                 }
@@ -130,43 +130,43 @@ private class SSESessionDelegate: NSObject, URLSessionDataDelegate {
     }
     
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        print("===== SSE DELEGATE: DATA RECEIVED =====")
-        print("Data size: \(data.count) bytes")
-        print("=====================================")
+//        print("===== SSE DELEGATE: DATA RECEIVED =====")
+//        print("Data size: \(data.count) bytes")
+//        print("=====================================")
         client?.processData(data)
     }
     
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
-        print("===== SSE DELEGATE: RESPONSE RECEIVED =====")
-        if let httpResponse = response as? HTTPURLResponse {
-            print("Status code: \(httpResponse.statusCode)")
-            print("Headers: \(httpResponse.allHeaderFields)")
-        } else {
-            print("Non-HTTP response received")
-        }
-        print("=========================================")
+//        print("===== SSE DELEGATE: RESPONSE RECEIVED =====")
+//        if let httpResponse = response as? HTTPURLResponse {
+//            print("Status code: \(httpResponse.statusCode)")
+//            print("Headers: \(httpResponse.allHeaderFields)")
+//        } else {
+//            print("Non-HTTP response received")
+//        }
+//        print("=========================================")
         completionHandler(.allow)
     }
     
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        print("===== SSE DELEGATE: TASK COMPLETED =====")
+//        print("===== SSE DELEGATE: TASK COMPLETED =====")
         if let error = error {
             print("Error: \(error.localizedDescription)")
             client?.handleError(error)
         } else {
             print("Task completed successfully")
         }
-        print("======================================")
+//        print("======================================")
     }
     
     func urlSession(_ session: URLSession, didBecomeInvalidWithError error: Error?) {
-        print("===== SSE DELEGATE: SESSION INVALIDATED =====")
+//        print("===== SSE DELEGATE: SESSION INVALIDATED =====")
         if let error = error {
             print("Error: \(error.localizedDescription)")
             client?.handleError(error)
         } else {
             print("Session invalidated without error")
         }
-        print("==========================================")
+//        print("==========================================")
     }
 } 
