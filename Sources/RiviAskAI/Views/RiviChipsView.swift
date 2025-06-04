@@ -1,90 +1,118 @@
 import SwiftUI
 
-/// A view that displays a collection of chips (filters/tags) in a horizontal scrollable list
+/// A customizable horizontal chips view component with removal capability
 public struct RiviChipsView: View {
-    @Binding private var chips: Set<String>
-    private let theme: RiviAskAITheme
-    private let onRemoveChip: ((String) -> Void)?
-    private let onCallFilterSearch: ((String) -> Void)?
+    // MARK: - Configuration
     
-    /// Initialize a chips view with custom configuration
-    /// - Parameters:
-    ///   - chips: The collection of chips to display
-    ///   - theme: Theme to customize the appearance
-    ///   - onRemoveChip: Closure called when a chip is removed
-    ///   - onCallFilterSearch: Closure called to trigger filter search with remaining chips
-    public init(
-        chips: Binding<Set<String>>,
-        theme: RiviAskAITheme = .default,
-        onRemoveChip: ((String) -> Void)? = nil,
-        onCallFilterSearch: ((String) -> Void)? = nil
-    ) {
-        self._chips = chips
-        self.theme = theme
-        self.onRemoveChip = onRemoveChip
-        self.onCallFilterSearch = onCallFilterSearch
+    /// Configuration options for the RiviChipsView
+    public struct Configuration {
+        /// The font to use for the chip text
+        public var font: Font
+        /// The corner radius of the chips
+        public var cornerRadius: CGFloat
+        /// The padding inside the chips
+        public var chipPadding: EdgeInsets
+        /// The spacing between chips
+        public var spacing: CGFloat
+        /// The size of the remove (X) icon
+        public var removeIconSize: CGFloat
+        /// The spacing between the text and remove icon
+        public var textIconSpacing: CGFloat
+        
+        // MARK: - Theme Properties
+        
+        /// Background color for the chips
+        public var chipBackgroundColor: Color
+        /// Border color for the chips
+        public var chipBorderColor: Color
+        /// Text color for the chips
+        public var chipTextColor: Color
+        /// Remove icon color
+        public var removeIconColor: Color
+        
+        /// Create a default configuration
+        public static var `default`: Configuration {
+            Configuration(
+                font: .system(size: 14, weight: .regular),
+                cornerRadius: 8,
+                chipPadding: EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12),
+                spacing: 8,
+                removeIconSize: 14,
+                textIconSpacing: 6,
+                chipBackgroundColor: Color(light: "#FFFFFF", dark: "#FFFFFF"),
+                chipBorderColor: Color(light: "#7B3AEC", dark: "#7B3AEC"),
+                chipTextColor: Color(light: "#7B3AEC", dark: "#7B3AEC"),
+                removeIconColor: Color(light: "#7B3AEC", dark: "#7B3AEC")
+            )
+        }
     }
+    
+    // MARK: - Properties
+    
+    /// The configuration for this chips view
+    private let configuration: Configuration
+    
+    /// The set of strings to display as chips
+    @Binding private var chips: Set<String>
+    
+    /// The action to perform when a chip is removed
+    private let onRemove: ((String) -> Void)?
+    
+    // MARK: - Initialization
+    
+    /// Initialize with a configuration, chips binding, and optional removal action
+    public init(
+        configuration: Configuration = .default,
+        chips: Binding<Set<String>>,
+        onRemove: ((String) -> Void)? = nil
+    ) {
+        self.configuration = configuration
+        self._chips = chips
+        self.onRemove = onRemove
+    }
+    
+    // MARK: - Body
     
     public var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: configuration.spacing) {
                 ForEach(Array(chips), id: \.self) { chip in
-                    ChipView(
-                        title: chip,
-                        theme: theme,
-                        onRemove: {
-                            removeChip(chip)
-                        }
-                    )
+                    chipView(for: chip)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
         }
-        .frame(height: chips.isEmpty ? 0 : 44)
-        .animation(.easeInOut, value: chips)
     }
+    
+    // MARK: - Helper Views
+    
+    private func chipView(for text: String) -> some View {
+        HStack(spacing: configuration.textIconSpacing) {
+            Text(text)
+                .font(configuration.font)
+                .foregroundStyle(configuration.chipTextColor)
+            
+            Button(action: {
+                removeChip(text)
+            }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: configuration.removeIconSize))
+                    .foregroundStyle(configuration.removeIconColor)
+            }
+        }
+        .padding(configuration.chipPadding)
+        .background(configuration.chipBackgroundColor)
+        .clipShape(RoundedRectangle(cornerRadius: configuration.cornerRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: configuration.cornerRadius)
+                .stroke(configuration.chipBorderColor, lineWidth: 1)
+        )
+        .padding(1)
+    }
+    
+    // MARK: - Methods
     
     private func removeChip(_ chip: String) {
         chips.remove(chip)
-        onRemoveChip?(chip)
-        
-        // Call filter search with remaining chips if available
-        if !chips.isEmpty, let onCallFilterSearch = onCallFilterSearch {
-            let query = chips.joined(separator: ", ")
-            onCallFilterSearch(query)
-        }
+        onRemove?(chip)
     }
 }
-
-/// A single chip view representing a filter or tag
-private struct ChipView: View {
-    let title: String
-    let theme: RiviAskAITheme
-    let onRemove: () -> Void
-    
-    var body: some View {
-        HStack(spacing: 6) {
-            Text(title)
-                .font(theme.bodyFont())
-                .foregroundColor(theme.textColor)
-                .lineLimit(1)
-            
-            Button(action: onRemove) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(theme.textColor.opacity(0.6))
-                    .padding(2)
-            }
-        }
-        .padding(.vertical, 6)
-        .padding(.leading, 12)
-        .padding(.trailing, 8)
-        .background(theme.buttonBackgroundColor)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(theme.inputBorderColor, lineWidth: 1)
-        )
-    }
-} 

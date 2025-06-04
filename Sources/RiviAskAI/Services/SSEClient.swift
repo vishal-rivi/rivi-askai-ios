@@ -9,11 +9,6 @@ public class SSEClient {
     private var errorHandler: ((Error) -> Void)?
     private var buffer = ""
     
-    /// Initialize the SSE client
-    public init() {
-        RiviAskAILogger.log("SSEClient initialized", level: .debug)
-    }
-    
     /// Start an SSE connection to the specified URL
     /// - Parameters:
     ///   - url: The URL to connect to
@@ -50,29 +45,19 @@ public class SSEClient {
             finalRequest.timeoutInterval = TimeInterval(Double.infinity)
             finalRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         }
-        
-        RiviAskAILogger.log("Connecting to SSE endpoint: \(url.absoluteString)", level: .debug)
-        
+                
         task = urlSession?.dataTask(with: finalRequest)
         task?.resume()
         isConnected = true
-        RiviAskAILogger.log("SSE connection started", level: .info)
     }
     
     /// Process received data from the SSE connection
     /// - Parameter data: The data received
     func processData(_ data: Data) {
         guard let dataString = String(data: data, encoding: .utf8) else {
-            RiviAskAILogger.log("Received non-UTF8 data", level: .warning)
-//            print("===== SSE RECEIVED NON-UTF8 DATA =====")
-//            print("Data bytes: \(data.count)")
-//            print("===================================")
+            Logger.logError(message: "Received non-UTF8 data")
             return
         }
-            
-//        print("===== SSE RAW DATA RECEIVED =====")
-//        print("Data: \(dataString)")
-//        print("===============================")
             
         buffer += dataString
         
@@ -82,13 +67,24 @@ public class SSEClient {
             buffer = String(buffer[eventEndIndex.upperBound...])
             
             if !eventString.isEmpty {
-                let truncatedString = eventString.count > 100 ? eventString.prefix(100) + "..." : eventString
-                RiviAskAILogger.log("Received SSE event: \(truncatedString)", level: .debug)
-//                print("===== SSE EVENT PROCESSED =====")
-//                print("Event: \(eventString)")
-//                print("============================")
+                // Extract the JSON data from the event string
+                // SSE format typically has "data: " prefix followed by the actual data
+                var jsonString = eventString
+                
+                // If the event starts with "data: ", remove that prefix
+                if let dataPrefix = jsonString.range(of: "data: ") {
+                    jsonString = String(jsonString[dataPrefix.upperBound...])
+                }
+                
+                // Handle multi-line data fields (each line starting with "data: ")
+                if jsonString.contains("\ndata: ") {
+                    jsonString = jsonString.components(separatedBy: "\ndata: ")
+                        .joined(separator: "")
+                }
+                
                 DispatchQueue.main.async { [weak self] in
-                    self?.eventHandler?(eventString)
+                    // print("-->> Processed: \(jsonString)")
+                    self?.eventHandler?(jsonString)
                 }
             }
         }
@@ -97,7 +93,7 @@ public class SSEClient {
     /// Handle errors from the SSE connection
     /// - Parameter error: The error that occurred
     func handleError(_ error: Error) {
-        RiviAskAILogger.logError("SSE connection error", error: error)
+        Logger.logError(message: "SSE connection error", error: error)
         DispatchQueue.main.async { [weak self] in
             self?.errorHandler?(error)
         }
@@ -106,7 +102,6 @@ public class SSEClient {
     /// Disconnect from the current SSE connection
     public func disconnect() {
         if isConnected {
-            RiviAskAILogger.log("Disconnecting SSE connection", level: .debug)
             task?.cancel()
             urlSession?.invalidateAndCancel()
             isConnected = false
@@ -116,7 +111,6 @@ public class SSEClient {
     
     deinit {
         disconnect()
-        RiviAskAILogger.log("SSEClient deinitializing", level: .debug)
     }
 }
 
@@ -130,43 +124,22 @@ private class SSESessionDelegate: NSObject, URLSessionDataDelegate {
     }
     
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-//        print("===== SSE DELEGATE: DATA RECEIVED =====")
-//        print("Data size: \(data.count) bytes")
-//        print("=====================================")
         client?.processData(data)
     }
     
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
-//        print("===== SSE DELEGATE: RESPONSE RECEIVED =====")
-//        if let httpResponse = response as? HTTPURLResponse {
-//            print("Status code: \(httpResponse.statusCode)")
-//            print("Headers: \(httpResponse.allHeaderFields)")
-//        } else {
-//            print("Non-HTTP response received")
-//        }
-//        print("=========================================")
         completionHandler(.allow)
     }
     
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-//        print("===== SSE DELEGATE: TASK COMPLETED =====")
         if let error = error {
-            print("Error: \(error.localizedDescription)")
             client?.handleError(error)
-        } else {
-            print("Task completed successfully")
         }
-//        print("======================================")
     }
     
     func urlSession(_ session: URLSession, didBecomeInvalidWithError error: Error?) {
-//        print("===== SSE DELEGATE: SESSION INVALIDATED =====")
         if let error = error {
-            print("Error: \(error.localizedDescription)")
             client?.handleError(error)
-        } else {
-            print("Session invalidated without error")
         }
-//        print("==========================================")
     }
 } 

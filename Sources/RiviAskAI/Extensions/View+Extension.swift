@@ -8,7 +8,7 @@ struct SizePreferenceKey: PreferenceKey {
 }
 
 extension View {
-    func readSize(onChange: @escaping (CGSize) -> Void) -> some View {
+    public func readSize(onChange: @escaping (CGSize) -> Void) -> some View {
         background(
             GeometryReader { geometryProxy in
                 Color.clear
