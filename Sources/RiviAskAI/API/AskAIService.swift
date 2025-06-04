@@ -32,7 +32,7 @@ public class AskAIService: AskAIServiceProtocol {
     
     /// Initialize with a base URL
     /// - Parameter baseURL: The base URL for API requests
-    public init(baseURL: String = "http://34.48.22.18:9000/api/v1") {
+    public init(baseURL: String = "https://askai-gateway-staging.rivi.co/api/v1") { //"http://34.48.22.18:9000/api/v1"
         self.baseURL = baseURL
         self.sseClient = SSEClient()
     }
