@@ -81,6 +81,54 @@ public struct RiviAskAISheet: View {
                 textFieldBackgroundColor: Color(light: "#FFFFFF", dark: "#FFFFFF")
             )
         }
+        
+        public init(
+            titleText: String,
+            placeholderText: String,
+            submitButtonText: String,
+            titleFont: Font,
+            inputFont: Font,
+            submitButtonFont: Font,
+            padding: EdgeInsets,
+            lineLimit: Int,
+            spacing: CGFloat,
+            headerIconSize: CGFloat,
+            showHeaderIcon: Bool,
+            headerSpacing: CGFloat,
+            backgroundColor: Color,
+            titleColor: Color,
+            titleBackgroundColor: Color,
+            textColor: Color,
+            closeButtonColor: Color,
+            submitButtonBackgroundColor: Color,
+            submitButtonTextColor: Color,
+            headerIconColor: Color,
+            textFieldBorderColor: Color,
+            textFieldBackgroundColor: Color
+        ) {
+            self.titleText = titleText
+            self.placeholderText = placeholderText
+            self.submitButtonText = submitButtonText
+            self.titleFont = titleFont
+            self.inputFont = inputFont
+            self.submitButtonFont = submitButtonFont
+            self.padding = padding
+            self.lineLimit = lineLimit
+            self.spacing = spacing
+            self.headerIconSize = headerIconSize
+            self.showHeaderIcon = showHeaderIcon
+            self.headerSpacing = headerSpacing
+            self.backgroundColor = backgroundColor
+            self.titleColor = titleColor
+            self.titleBackgroundColor = titleBackgroundColor
+            self.textColor = textColor
+            self.closeButtonColor = closeButtonColor
+            self.submitButtonBackgroundColor = submitButtonBackgroundColor
+            self.submitButtonTextColor = submitButtonTextColor
+            self.headerIconColor = headerIconColor
+            self.textFieldBorderColor = textFieldBorderColor
+            self.textFieldBackgroundColor = textFieldBackgroundColor
+        }
     }
     
     // MARK: - Properties
@@ -102,7 +150,7 @@ public struct RiviAskAISheet: View {
     
     /// Initialize with a configuration and presentation binding
     public init(
-        configuration: Configuration = .default,
+        configuration: RiviAskAISheet.Configuration = .default,
         isPresented: Binding<Bool>,
         onSubmit: @escaping (String) -> Void
     ) {
@@ -127,8 +175,9 @@ public struct RiviAskAISheet: View {
     }
     
     // MARK: - Methods
+    @ViewBuilder
     private func content() -> some View {
-        return VStack(spacing: configuration.spacing) {
+        VStack(spacing: configuration.spacing) {
             // Header with title and close button
             HStack {
                 HStack(spacing: configuration.headerSpacing) {
@@ -165,7 +214,6 @@ public struct RiviAskAISheet: View {
                     text: $inputText,
                     axis: .vertical
                 )
-                .tint(configuration.textColor)
                 .font(configuration.inputFont)
                 .foregroundStyle(configuration.textColor)
                 .lineLimit(configuration.lineLimit, reservesSpace: true)
@@ -183,7 +231,6 @@ public struct RiviAskAISheet: View {
                     configuration.placeholderText,
                     text: $inputText
                 )
-                .tint(configuration.textColor)
                 .font(configuration.inputFont)
                 .foregroundStyle(configuration.textColor)
                 .lineLimit(configuration.lineLimit)

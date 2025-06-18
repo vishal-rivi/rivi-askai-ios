@@ -4,10 +4,17 @@ import Foundation
 public class ChipsExtractor {
     /// Extract chips from a JSON entity dictionary
     /// - Parameters:
-    ///   - entity: Dictionary representing a flight entity
-    ///   - isFlightMode: Whether to process as flight entity (kept for API compatibility)
+    ///   - entity: Dictionary representing a flight or hotel entity
+    ///   - isFlightMode: Whether to process as flight entity (true) or hotel entity (false)
     /// - Returns: Set of extracted chips
-    public static func extractChipsFromJSONEntity(_ entity: [String: Any], isFlightMode: Bool = true) -> Set<String> {
+    public static func extractChipsFromJSONEntity(_ entity: [String: Any], isFlightMode: Bool) -> Set<String> {
+        return isFlightMode ? extractFlightChips(entity) : extractHotelChips(entity)
+    }
+    
+    /// Extract flight-specific chips from a JSON entity dictionary
+    /// - Parameter entity: Dictionary representing a flight entity
+    /// - Returns: Set of extracted chips
+    private static func extractFlightChips(_ entity: [String: Any]) -> Set<String> {
         var chips = Set<String>()
         
         // Trip duration - handle both String and NSNull cases
@@ -109,6 +116,98 @@ public class ChipsExtractor {
         if let preferences = entity["other_flight_preferences"] as? [String], !preferences.isEmpty {
             for preference in preferences {
                 chips.insert(preference)
+            }
+        }
+        
+        // Direct chips array (if available)
+        if let directChips = entity["chips"] as? [String] {
+            for chip in directChips {
+                if !chip.isEmpty {
+                    chips.insert(chip)
+                }
+            }
+        }
+        
+        return chips
+    }
+    
+    /// Extract hotel-specific chips from a JSON entity dictionary
+    /// - Parameter entity: Dictionary representing a hotel entity
+    /// - Returns: Set of extracted chips
+    private static func extractHotelChips(_ entity: [String: Any]) -> Set<String> {
+        var chips = Set<String>()
+        
+        // Star rating
+        if let starRatings = entity["star_rating"] as? [String], !starRatings.isEmpty {
+            for rating in starRatings {
+                chips.insert("\(rating) star")
+            }
+        }
+        
+        // User rating
+        if let userRating = entity["preferred_user_rating"] as? String, !userRating.isEmpty {
+            chips.insert("User Ratings: \(userRating)")
+        } else if let userRatings = entity["preferred_user_rating"] as? [String], !userRatings.isEmpty {
+            chips.insert("User Ratings: \(userRatings[0])")
+        }
+        
+        // Budget
+        if let budget = entity["stay_budget"] as? String, !budget.isEmpty {
+            chips.insert("Budget: \(budget)")
+        }
+        
+        // Amenities
+        if let amenities = entity["amenities"] as? [String] {
+            for amenity in amenities {
+                if !amenity.isEmpty {
+                    chips.insert(amenity)
+                }
+            }
+        }
+        
+        // Accommodation type
+        if let accommodationType = entity["accommodation_type"] as? String, !accommodationType.isEmpty {
+            chips.insert("Accommodation Type: \(accommodationType)")
+        }
+        
+        // Room type
+        if let roomTypes = entity["preferred_room_type"] as? [String] {
+            for roomType in roomTypes {
+                if !roomType.isEmpty {
+                    chips.insert(roomType)
+                }
+            }
+        }
+        
+        // Hotel names
+        if let hotelNames = entity["preferred_hotel_names"] as? [String] {
+            for hotelName in hotelNames {
+                if !hotelName.isEmpty {
+                    chips.insert(hotelName)
+                }
+            }
+        }
+        
+        // Stay location
+        if let stayLocation = entity["preferred_stay_location"] as? String, !stayLocation.isEmpty {
+            chips.insert("Near \(stayLocation)")
+        }
+        
+        // Hotel brand
+        if let hotelBrands = entity["preferred_hotel_brand"] as? [String] {
+            for brand in hotelBrands {
+                if !brand.isEmpty {
+                    chips.insert(brand)
+                }
+            }
+        }
+        
+        // Other preferences
+        if let otherPreferences = entity["other_stay_preferences"] as? [String] {
+            for preference in otherPreferences {
+                if !preference.isEmpty {
+                    chips.insert(preference)
+                }
             }
         }
         

@@ -13,19 +13,7 @@ struct RiviAskAIExampleApp: App {
     
     var body: some Scene {
         WindowGroup {
-//            TabView(selection: $selectedTab) {
-//                ContentView()
-//                    .tabItem {
-//                        Label("Original Demo", systemImage: "1.circle")
-//                    }
-//                    .tag(0)
-                
-                ContentView()
-//                    .tabItem {
-//                        Label("Flows Demo", systemImage: "2.circle")
-//                    }
-//                    .tag(1)
-//            }
+            ContentView()
         }
     }
 }

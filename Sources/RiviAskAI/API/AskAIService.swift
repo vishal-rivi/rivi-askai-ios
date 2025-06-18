@@ -133,8 +133,22 @@ public class AskAIService: AskAIServiceProtocol {
                 }
                 
                 // Extract chips from the first entity if available
-                if let firstEntity = entities.first {
-                    return ChipsExtractor.extractChipsFromJSONEntity(firstEntity, isFlightMode: true)
+                if let entity = entities.first {
+                    
+                    // Determine if this is a flight or hotel entity based on the tab selection or entity content
+                    let isFlightMode: Bool
+                    
+                    // Check if this is a flight or hotel entity based on the presence of specific keys
+                    if entity["preferred_airlines"] != nil || entity["flight_budget"] != nil {
+                        isFlightMode = true
+                    } else if entity["star_rating"] != nil || entity["stay_budget"] != nil {
+                        isFlightMode = false
+                    } else {
+                        // Default to the current tab selection
+                        isFlightMode = true
+                    }
+                    
+                    return ChipsExtractor.extractChipsFromJSONEntity(entity, isFlightMode: isFlightMode)
                 } else {
                     // No entities found
                     Logger.logError(message: "No entities found in response")

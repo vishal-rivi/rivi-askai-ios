@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Extension for creating SwiftUI Colors from hex strings and handling dynamic color themes
-public extension Color {
+extension Color {
     /// Creates a Color from a hex string
     init(hex: String) {
         self.init(uiColor: UIColor(hex: hex) ?? .clear)

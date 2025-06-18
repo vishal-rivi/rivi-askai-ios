@@ -83,7 +83,6 @@ public class SSEClient {
                 }
                 
                 DispatchQueue.main.async { [weak self] in
-                    // print("-->> Processed: \(jsonString)")
                     self?.eventHandler?(jsonString)
                 }
             }

@@ -7,7 +7,7 @@ import SwiftUI
 /// Main entry point for RiviAskAI package
 public class RiviAskAI {
     /// The API service for making AskAI requests
-    public static var apiService: AskAIServiceProtocol = AskAIService()
+    private static var apiService: AskAIServiceProtocol = AskAIService()
     
     /// Perform an AskAI request with simplified parameters
     /// - Parameters:
@@ -17,7 +17,7 @@ public class RiviAskAI {
     ///   - authToken: Optional authorization token
     /// - Returns: Set of chip strings extracted from the response
     /// - Throws: Error if the request fails
-    public static func askAI(
+    public static func performAskAIRequest(
         query: String,
         searchId: String,
         isRound: Bool = false,
@@ -39,7 +39,7 @@ public class RiviAskAI {
     ///   - authToken: The authorization token
     ///   - onEvent: Callback for received events
     ///   - onError: Callback for connection errors
-    public static func subscribeToUpdates(
+    public static func subscribeToEvents(
         searchId: String,
         authToken: String,
         onEvent: @escaping (String) -> Void,

@@ -45,6 +45,30 @@ public struct RiviChipsView: View {
                 removeIconColor: Color(light: "#7B3AEC", dark: "#7B3AEC")
             )
         }
+        
+        public init(
+            font: Font,
+            cornerRadius: CGFloat,
+            chipPadding: EdgeInsets,
+            spacing: CGFloat,
+            removeIconSize: CGFloat,
+            textIconSpacing: CGFloat,
+            chipBackgroundColor: Color,
+            chipBorderColor: Color,
+            chipTextColor: Color,
+            removeIconColor: Color
+        ) {
+            self.font = font
+            self.cornerRadius = cornerRadius
+            self.chipPadding = chipPadding
+            self.spacing = spacing
+            self.removeIconSize = removeIconSize
+            self.textIconSpacing = textIconSpacing
+            self.chipBackgroundColor = chipBackgroundColor
+            self.chipBorderColor = chipBorderColor
+            self.chipTextColor = chipTextColor
+            self.removeIconColor = removeIconColor
+        }
     }
     
     // MARK: - Properties
@@ -62,7 +86,7 @@ public struct RiviChipsView: View {
     
     /// Initialize with a configuration, chips binding, and optional removal action
     public init(
-        configuration: Configuration = .default,
+        configuration: RiviChipsView.Configuration = .default,
         chips: Binding<Set<String>>,
         onRemove: ((String) -> Void)? = nil
     ) {

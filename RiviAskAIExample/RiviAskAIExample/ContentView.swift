@@ -60,21 +60,7 @@ struct ContentView: View {
                 
                 RiviChipsView(chips: $filterChips) { removedChip in
                     print("Removed chip: \(removedChip)")
-                    
-                    Task {
-                        do {
-                            filterChips = try await RiviAskAI.askAI(
-                                query: filterChips.joined(separator: ", "),
-                                searchId: searchId,
-                                isRound: false,
-                                authToken: authToken
-                            )
-                            print("-->> chips: \(filterChips)")
-                            
-                        } catch (let error) {
-                            print("-->> error: \(error.localizedDescription)")
-                        }
-                    }
+                    processQuery(filterChips.joined(separator: ", "))
                 }
                 .frame(height: 50)
             }
@@ -267,21 +253,7 @@ struct ContentView: View {
             
             Button(action: {
                 filterChips.remove(text)
-                
-                Task {
-                    do {
-                        filterChips = try await RiviAskAI.askAI(
-                            query: filterChips.joined(separator: ", "),
-                            searchId: searchId,
-                            isRound: false,
-                            authToken: authToken
-                        )
-                        print("-->> chips: \(filterChips)")
-                        
-                    } catch (let error) {
-                        print("-->> error: \(error.localizedDescription)")
-                    }
-                }
+                processQuery(filterChips.joined(separator: ", "))
             }) {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 12))
@@ -329,7 +301,7 @@ struct ContentView: View {
             .padding(.horizontal)
             
             Button(action: {
-                processCustomQuery(userQuery)
+                processQuery(userQuery)
                 showCustomSheet = false
             }) {
                 Text("Submit Query")
@@ -354,25 +326,7 @@ struct ContentView: View {
         
         Task {
             do {
-                filterChips = try await RiviAskAI.askAI(
-                    query: userQuery,
-                    searchId: searchId,
-                    isRound: false,
-                    authToken: authToken
-                )
-            } catch {
-                print("Error: \(error)")
-            }
-        }
-    }
-    
-    // Custom UI Flow - Process query using the same business logic
-    private func processCustomQuery(_ query: String) {
-        userQuery = query
-        
-        Task {
-            do {
-                filterChips = try await RiviAskAI.askAI(
+                filterChips = try await RiviAskAI.performAskAIRequest(
                     query: userQuery,
                     searchId: searchId,
                     isRound: false,
@@ -386,7 +340,7 @@ struct ContentView: View {
     
     // SSE Subscription Flow - Subscribe to events
     private func subscribeToEvents() {
-        RiviAskAI.subscribeToUpdates(
+        RiviAskAI.subscribeToEvents(
             searchId: searchId,
             authToken: authToken,
             onEvent: { eventData in

@@ -51,6 +51,34 @@ public struct RiviAskAIButton: View {
                 disabledTextColor: Color(light: "#1A1A1E", dark: "#1A1A1E")
             )
         }
+        
+        public init(
+            text: String,
+            font: Font,
+            showIcon: Bool,
+            spacing: CGFloat,
+            cornerRadius: CGFloat,
+            padding: EdgeInsets,
+            iconSize: CGFloat,
+            backgroundColor: Color,
+            textColor: Color,
+            iconColor: Color,
+            disabledBackgroundColor: Color,
+            disabledTextColor: Color
+        ) {
+            self.text = text
+            self.font = font
+            self.showIcon = showIcon
+            self.spacing = spacing
+            self.cornerRadius = cornerRadius
+            self.padding = padding
+            self.iconSize = iconSize
+            self.backgroundColor = backgroundColor
+            self.textColor = textColor
+            self.iconColor = iconColor
+            self.disabledBackgroundColor = disabledBackgroundColor
+            self.disabledTextColor = disabledTextColor
+        }
     }
     
     // MARK: - Properties
@@ -68,7 +96,7 @@ public struct RiviAskAIButton: View {
     
     /// Initialize with a configuration, action, and enabled state
     public init(
-        configuration: Configuration = .default,
+        configuration: RiviAskAIButton.Configuration = .default,
         isEnabled: Binding<Bool> = .constant(false),
         action: @escaping () -> Void
     ) {
