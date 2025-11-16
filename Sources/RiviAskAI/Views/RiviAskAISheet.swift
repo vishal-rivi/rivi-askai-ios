@@ -12,6 +12,8 @@ public struct RiviAskAISheet: View {
         public var placeholderText: String
         /// The submit button text
         public var submitButtonText: String
+        /// The info tooltip text
+        public var infoTooltipText: String
         /// The title font
         public var titleFont: Font
         /// The input field font
@@ -30,6 +32,10 @@ public struct RiviAskAISheet: View {
         public var showHeaderIcon: Bool
         /// The spacing in the header
         public var headerSpacing: CGFloat
+        /// Whether to show the info button
+        public var showInfoButton: Bool
+        /// The info button icon size
+        public var infoButtonSize: CGFloat
         
         // MARK: - Theme Properties
         
@@ -53,13 +59,22 @@ public struct RiviAskAISheet: View {
         public var textFieldBorderColor: Color
         /// Background color for the text field
         public var textFieldBackgroundColor: Color
+        /// Info button color
+        public var infoButtonColor: Color
+        /// Tooltip background color
+        public var tooltipBackgroundColor: Color
+        /// Tooltip text color
+        public var tooltipTextColor: Color
+        /// Tooltip font
+        public var tooltipFont: Font
         
         /// Create a default configuration
         public static var `default`: Configuration {
             Configuration(
                 titleText: "Ask AI",
-                placeholderText: "e.g. Direct flights that reach before 4PM with meals included",
+                placeholderText: "",
                 submitButtonText: "Improve Results",
+                infoTooltipText: "",
                 titleFont: .system(size: 18, weight: .regular),
                 inputFont: .system(size: 16, weight: .regular),
                 submitButtonFont: .system(size: 16, weight: .medium),
@@ -69,6 +84,8 @@ public struct RiviAskAISheet: View {
                 headerIconSize: 20,
                 showHeaderIcon: true,
                 headerSpacing: 8,
+                showInfoButton: true,
+                infoButtonSize: 12,
                 backgroundColor: Color(light: "#FFFFFF", dark: "#FFFFFF"),
                 titleColor: Color(light: "#7C3AED", dark: "#7C3AED"),
                 titleBackgroundColor: Color(light: "#EFE5FF", dark: "#EFE5FF"),
@@ -78,7 +95,11 @@ public struct RiviAskAISheet: View {
                 submitButtonTextColor: Color(light: "#FFFFFF", dark: "#FFFFFF"),
                 headerIconColor: Color(light: "#7B3AEC", dark: "#7B3AEC"),
                 textFieldBorderColor: Color(light: "#D9D9DE", dark: "#D9D9DE"),
-                textFieldBackgroundColor: Color(light: "#FFFFFF", dark: "#FFFFFF")
+                textFieldBackgroundColor: Color(light: "#FFFFFF", dark: "#FFFFFF"),
+                infoButtonColor: Color(light: "#9294A0", dark: "#9294A0"),
+                tooltipBackgroundColor: Color(light: "#2A282E", dark: "#2A282E"),
+                tooltipTextColor: Color(light: "#FFFFFF", dark: "#FFFFFF"),
+                tooltipFont: .system(size: 14, weight: .regular)
             )
         }
         
@@ -86,6 +107,7 @@ public struct RiviAskAISheet: View {
             titleText: String,
             placeholderText: String,
             submitButtonText: String,
+            infoTooltipText: String,
             titleFont: Font,
             inputFont: Font,
             submitButtonFont: Font,
@@ -95,6 +117,8 @@ public struct RiviAskAISheet: View {
             headerIconSize: CGFloat,
             showHeaderIcon: Bool,
             headerSpacing: CGFloat,
+            showInfoButton: Bool,
+            infoButtonSize: CGFloat,
             backgroundColor: Color,
             titleColor: Color,
             titleBackgroundColor: Color,
@@ -104,11 +128,16 @@ public struct RiviAskAISheet: View {
             submitButtonTextColor: Color,
             headerIconColor: Color,
             textFieldBorderColor: Color,
-            textFieldBackgroundColor: Color
+            textFieldBackgroundColor: Color,
+            infoButtonColor: Color,
+            tooltipBackgroundColor: Color,
+            tooltipTextColor: Color,
+            tooltipFont: Font
         ) {
             self.titleText = titleText
             self.placeholderText = placeholderText
             self.submitButtonText = submitButtonText
+            self.infoTooltipText = infoTooltipText
             self.titleFont = titleFont
             self.inputFont = inputFont
             self.submitButtonFont = submitButtonFont
@@ -118,6 +147,8 @@ public struct RiviAskAISheet: View {
             self.headerIconSize = headerIconSize
             self.showHeaderIcon = showHeaderIcon
             self.headerSpacing = headerSpacing
+            self.showInfoButton = showInfoButton
+            self.infoButtonSize = infoButtonSize
             self.backgroundColor = backgroundColor
             self.titleColor = titleColor
             self.titleBackgroundColor = titleBackgroundColor
@@ -128,11 +159,16 @@ public struct RiviAskAISheet: View {
             self.headerIconColor = headerIconColor
             self.textFieldBorderColor = textFieldBorderColor
             self.textFieldBackgroundColor = textFieldBackgroundColor
+            self.infoButtonColor = infoButtonColor
+            self.tooltipBackgroundColor = tooltipBackgroundColor
+            self.tooltipTextColor = tooltipTextColor
+            self.tooltipFont = tooltipFont
         }
     }
     
     // MARK: - Properties
     @State private var sheetContentHeight: CGFloat = 0
+    @State private var showTooltip: Bool = false
     
     /// The configuration for this sheet
     private let configuration: Configuration
@@ -141,7 +177,10 @@ public struct RiviAskAISheet: View {
     @Binding private var isPresented: Bool
     
     /// The text entered in the text field
-    @State private var inputText: String = ""
+    @State private var userQuery: String = ""
+    
+    /// Parameter change notice message
+    private let parameterChangeNotice: String?
     
     /// The action to perform when the user submits their query
     private let onSubmit: (String) -> Void
@@ -149,13 +188,50 @@ public struct RiviAskAISheet: View {
     // MARK: - Initialization
     
     /// Initialize with a configuration and presentation binding
+    /// - Parameters:
+    ///   - configuration: The configuration for the sheet
+    ///   - isPresented: Binding to control sheet presentation
+    ///   - queryType: The type of query (hotel or flight) to customize the tooltip and placeholder
+    ///   - userQuery: Optional initial text to prefill the text field
+    ///   - parameterChangeNotice: Optional parameter change notice to display as warning
+    ///   - onSubmit: Callback when user submits the query
     public init(
         configuration: RiviAskAISheet.Configuration = .default,
         isPresented: Binding<Bool>,
+        queryType: QueryType,
+        userQuery: String = "",
+        parameterChangeNotice: String? = nil,
         onSubmit: @escaping (String) -> Void
     ) {
-        self.configuration = configuration
+        // Create a modified configuration with query-type-specific text
+        var modifiedConfig = configuration
+        
+        // Update tooltip text if empty
+        if modifiedConfig.infoTooltipText.isEmpty {
+            modifiedConfig.infoTooltipText =
+            switch queryType {
+            case .hotel:
+                "AI intelligently sorts hotels to prioritize your preferences - without filtering results."
+            case .flight:
+                "AI intelligently sorts flights to prioritize your preferences - without filtering results."
+            }
+        }
+        
+        // Update placeholder text if empty
+        if modifiedConfig.placeholderText.isEmpty {
+            modifiedConfig.placeholderText =
+            switch queryType {
+            case .hotel:
+                "e.g. 4 star hotels near the airport with free breakfast"
+            case .flight:
+                "e.g. Direct flights that reach before 4PM with meals included"
+            }
+        }
+        
+        self.configuration = modifiedConfig
         self._isPresented = isPresented
+        self._userQuery = State(initialValue: userQuery)
+        self.parameterChangeNotice = parameterChangeNotice
         self.onSubmit = onSubmit
     }
     
@@ -193,6 +269,47 @@ public struct RiviAskAISheet: View {
                     Text(configuration.titleText)
                         .font(configuration.titleFont)
                         .foregroundStyle(configuration.titleColor)
+                    
+                    if configuration.showInfoButton {
+                        Button {
+                            showTooltip.toggle()
+                            
+                            // Auto-hide tooltip after 3 seconds
+                            if showTooltip {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                    showTooltip = false
+                                }
+                            }
+                        } label: {
+                            Image("ic_info", bundle: .module)
+                                .resizable()
+                                .renderingMode(.template)
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: configuration.infoButtonSize, height: configuration.infoButtonSize)
+                                .foregroundStyle(configuration.infoButtonColor)
+                        }
+                        .popover(isPresented: $showTooltip, arrowEdge: .bottom) {
+                            if #available(iOS 16.4, *) {
+                                Text(configuration.infoTooltipText)
+                                    .fontWeight(.light)
+                                    .foregroundStyle(configuration.tooltipTextColor)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    .background(configuration.tooltipBackgroundColor)
+                                    .presentationCompactAdaptation(.popover)
+                            } else {
+                                // Fallback on earlier versions
+                                Text(configuration.infoTooltipText)
+                                    .fontWeight(.light)
+                                    .foregroundStyle(configuration.tooltipTextColor)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    .background(configuration.tooltipBackgroundColor)
+                            }
+                        }
+                    }
                 }
                 
                 Spacer()
@@ -208,10 +325,35 @@ public struct RiviAskAISheet: View {
             .padding(configuration.padding)
             .background(configuration.titleBackgroundColor)
             
+            // Parameter change notice banner
+            if let notice = parameterChangeNotice, !notice.isEmpty {
+                let warningConfig = RiviInfoBanner.Configuration(
+                    iconName: "ic_warning",
+                    titleText: "Your prompt includes changes to trip details",
+                    descriptionText: "To update trip details, use the search fields above.",
+                    titleFont: .system(size: 12, weight: .medium),
+                    descriptionFont: .system(size: 11, weight: .regular),
+                    cornerRadius: 8,
+                    padding: EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8),
+                    iconSpacing: 8,
+                    textSpacing: 2,
+                    showIcon: true,
+                    iconSize: 12,
+                    backgroundColor: Color(light: "#F7C55B1A", dark: "#F7C55B1A"),
+                    borderColor: Color(light: "#D3BD8C", dark: "#D3BD8C"),
+                    titleColor: Color(light: "#B17E10", dark: "#B17E10"),
+                    descriptionColor: Color(light: "#B17E10", dark: "#B17E10"),
+                    iconColor: Color(light: "#B17E10", dark: "#B17E10")
+                )
+                
+                RiviInfoBanner(configuration: warningConfig)
+                    .padding(.horizontal, configuration.padding.leading)
+            }
+            
             if #available(iOS 16.0, *) {
                 TextField(
                     configuration.placeholderText,
-                    text: $inputText,
+                    text: $userQuery,
                     axis: .vertical
                 )
                 .font(configuration.inputFont)
@@ -229,7 +371,7 @@ public struct RiviAskAISheet: View {
                 // Fallback on earlier versions
                 TextField(
                     configuration.placeholderText,
-                    text: $inputText
+                    text: $userQuery
                 )
                 .font(configuration.inputFont)
                 .foregroundStyle(configuration.textColor)
@@ -246,7 +388,7 @@ public struct RiviAskAISheet: View {
             
             // Improve Results button
             Button(action: {
-                onSubmit(inputText)
+                onSubmit(userQuery)
                 isPresented = false
             }) {
                 Text(configuration.submitButtonText)

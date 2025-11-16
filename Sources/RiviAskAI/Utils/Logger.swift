@@ -1,17 +1,14 @@
 import Foundation
 
 /// Utility for logging AskAI related events with formatted output
+/// - Note: Logging is automatically enabled in DEBUG builds and disabled in RELEASE builds
 public enum Logger {
-    /// Whether to enable logging
-    public static var isEnabled: Bool = true
-    
     /// Logs API request details
     /// - Parameters:
     ///   - url: The request URL
     ///   - params: The request parameters
     public static func logRequest(url: URL, params: [String: Any]) {
-        guard isEnabled else { return }
-        
+        #if DEBUG
         let divider = String(repeating: "=", count: 80)
         print("\n\(divider)")
         print("🔵 ASK AI REQUEST")
@@ -26,6 +23,7 @@ public enum Logger {
         }
         
         print(divider)
+        #endif
     }
     
     /// Logs API response details
@@ -34,8 +32,7 @@ public enum Logger {
     ///   - statusCode: The HTTP status code
     ///   - data: The response data
     public static func logResponse(url: URL, statusCode: Int, data: Data) {
-        guard isEnabled else { return }
-        
+        #if DEBUG
         let divider = String(repeating: "=", count: 80)
         print("\n\(divider)")
         print("🟢 ASK AI RESPONSE")
@@ -49,6 +46,7 @@ public enum Logger {
         }
         
         print(divider)
+        #endif
     }
     
     /// Logs error details
@@ -56,8 +54,7 @@ public enum Logger {
     ///   - message: The error message
     ///   - error: Optional Error object
     public static func logError(message: String, error: Error? = nil) {
-        guard isEnabled else { return }
-        
+        #if DEBUG
         let divider = String(repeating: "-", count: 80)
         print("\n\(divider)")
         print("❌ ASK AI ERROR")
@@ -67,6 +64,7 @@ public enum Logger {
             print("📍 Error: \(error.localizedDescription)")
         }
         print(divider)
+        #endif
     }
     
     /// Formats a JSON string with proper indentation
@@ -83,4 +81,4 @@ public enum Logger {
             .map { "   \($0)" }
             .joined(separator: "\n")
     }
-} 
+}

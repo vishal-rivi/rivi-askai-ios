@@ -5,10 +5,15 @@ public class ChipsExtractor {
     /// Extract chips from a JSON entity dictionary
     /// - Parameters:
     ///   - entity: Dictionary representing a flight or hotel entity
-    ///   - isFlightMode: Whether to process as flight entity (true) or hotel entity (false)
+    ///   - queryType: The type of query (hotel or flight)
     /// - Returns: Set of extracted chips
-    public static func extractChipsFromJSONEntity(_ entity: [String: Any], isFlightMode: Bool) -> Set<String> {
-        return isFlightMode ? extractFlightChips(entity) : extractHotelChips(entity)
+    public static func extractChipsFromJSONEntity(_ entity: [String: Any], queryType: QueryType) -> Set<String> {
+        switch queryType {
+        case .hotel:
+            return extractHotelChips(entity)
+        case .flight:
+            return extractFlightChips(entity)
+        }
     }
     
     /// Extract flight-specific chips from a JSON entity dictionary

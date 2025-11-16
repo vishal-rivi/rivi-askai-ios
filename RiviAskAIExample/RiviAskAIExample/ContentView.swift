@@ -7,6 +7,8 @@ struct ContentView: View {
     @State private var isAskAIButtonEnabled = false
     @State private var filterChips: Set<String> = []
     @State private var userQuery: String = ""
+    @State private var parameterChangeNotice: String? = nil
+    @State private var showAlert = false
     
     // Custom UI states
     @State private var showCustomSheet = false
@@ -15,33 +17,46 @@ struct ContentView: View {
     @State private var isSubscribed = false
     @State private var sseEvents: [String] = []
     
+    // Query type selection
+    @State private var selectedQueryType: QueryType = .hotel
+    @State private var selectedLanguage: Language = .english
+    
     // Constants for API calls
-    private let searchId = "682c4f4e8b9a1305495cb861"
-    private let authToken = "99d477cbcb65dcf06a992bb808061362ba2f2050c217ee488acbd708610b4012"
+    private let searchId = "meacv3WCaXhxHVnI"
+    private let authToken = "f5ec3434007443aaac7570d96d2292ba54f00f5892a3057dfa08ab4f8aba0597"
     
     var body: some View {
         NavigationView {
-            VStack {
-                Picker("Select Flow", selection: $selectedFlow) {
-                    Text("Package UI").tag(0)
-                    Text("Custom UI").tag(1)
-                    Text("SSE Demo").tag(2)
+            ScrollView(.vertical) {
+                VStack {
+                    Picker("Select Flow", selection: $selectedFlow) {
+                        Text("Package UI").tag(0)
+                        Text("Custom UI").tag(1)
+                        Text("SSE Demo").tag(2)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding()
+                    
+                    if selectedFlow == 0 {
+                        packageUIFlow
+                    } else if selectedFlow == 1 {
+                        customUIFlow
+                    } else {
+                        sseSubscriptionFlow
+                    }
+                    
+                    Spacer()
                 }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding()
-                
-                if selectedFlow == 0 {
-                    packageUIFlow
-                } else if selectedFlow == 1 {
-                    customUIFlow
-                } else {
-                    sseSubscriptionFlow
-                }
-                
-                Spacer()
             }
             .navigationTitle("RiviAskAI Demo")
             .padding()
+            .overlay {
+                if showAlert {
+                    RiviAlertDialog(isPresented: $showAlert) {
+                        print("Alert dismissed")
+                    }
+                }
+            }
         }
     }
     
@@ -51,6 +66,30 @@ struct ContentView: View {
         VStack(spacing: 24) {
             Text("Using Package UI Components")
                 .font(.headline)
+            
+            // Query type and language selection
+            VStack(spacing: 12) {
+                HStack {
+                    Text("Query Type:")
+                        .font(.subheadline)
+                    Picker("Query Type", selection: $selectedQueryType) {
+                        Text("Hotel").tag(QueryType.hotel)
+                        Text("Flight").tag(QueryType.flight)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
+                
+                HStack {
+                    Text("Language:")
+                        .font(.subheadline)
+                    Picker("Language", selection: $selectedLanguage) {
+                        Text("English").tag(Language.english)
+                        Text("Arabic").tag(Language.arabic)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
+            }
+            .padding(.bottom, 8)
             
             // 1. Show the chips view
             VStack(alignment: .leading) {
@@ -65,9 +104,20 @@ struct ContentView: View {
                 .frame(height: 50)
             }
             
-            // 2. Show the Ask AI button
+            // 2. Show the info banner
+            if !filterChips.isEmpty {
+                VStack(alignment: .leading) {
+                    Text("2. RiviInfoBanner:")
+                        .font(.subheadline)
+                        .bold()
+                    
+                    RiviInfoBanner()
+                }
+            }
+            
+            // 3. Show the Ask AI button
             VStack(alignment: .leading) {
-                Text("2. RiviAskAIButton:")
+                Text("3. RiviAskAIButton:")
                     .font(.subheadline)
                     .bold()
                 
@@ -98,14 +148,27 @@ struct ContentView: View {
             }
             
             // Demo controls
-            Button("Reset Demo") {
-                filterChips = []
-                userQuery = ""
+            HStack(spacing: 12) {
+                Button("Reset Demo") {
+                    filterChips = []
+                    userQuery = ""
+                    parameterChangeNotice = nil
+                }
+                
+                Button("Sort Best") {
+                    performSortBest()
+                }
+                .buttonStyle(.borderedProminent)
             }
             .padding(.top, 20)
         }
         .sheet(isPresented: $showAskAISheet) {
-            RiviAskAISheet(isPresented: $showAskAISheet) { query in
+            RiviAskAISheet(
+                isPresented: $showAskAISheet,
+                queryType: selectedQueryType,
+                userQuery: userQuery,
+                parameterChangeNotice: parameterChangeNotice
+            ) { query in
                 processQuery(query)
             }
         }
@@ -134,9 +197,20 @@ struct ContentView: View {
                 .frame(height: 50)
             }
             
-            // 2. Custom Ask AI button
+            // 2. Custom info banner
+            if !filterChips.isEmpty {
+                VStack(alignment: .leading) {
+                    Text("2. Custom Info Banner:")
+                        .font(.subheadline)
+                        .bold()
+                    
+                    customInfoBanner
+                }
+            }
+            
+            // 3. Custom Ask AI button
             VStack(alignment: .leading) {
-                Text("2. Custom Ask AI Button:")
+                Text("3. Custom Ask AI Button:")
                     .font(.subheadline)
                     .bold()
                 
@@ -182,8 +256,17 @@ struct ContentView: View {
             Button("Reset Demo") {
                 filterChips = []
                 userQuery = ""
+                parameterChangeNotice = nil
             }
             .padding(.top, 20)
+            
+            // Test alert button
+            Button("Test Alert Dialog") {
+                withAnimation(.easeInOut) {
+                    showAlert = true
+                }
+            }
+            .padding(.top, 8)
         }
         .sheet(isPresented: $showCustomSheet) {
             customSheetView
@@ -242,6 +325,34 @@ struct ContentView: View {
                 .cornerRadius(8)
             }
         }
+    }
+    
+    // MARK: - Custom info banner
+    
+    private var customInfoBanner: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "lightbulb.fill")
+                .font(.system(size: 18))
+                .foregroundColor(.orange)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Custom Info Banner")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.orange)
+                
+                Text("This is a custom styled info banner using your own UI design.")
+                    .font(.system(size: 12))
+                    .foregroundColor(.orange.opacity(0.8))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color.orange.opacity(0.1))
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+        )
     }
     
     // MARK: - Custom chip view
@@ -326,12 +437,34 @@ struct ContentView: View {
         
         Task {
             do {
-                filterChips = try await RiviAskAI.performAskAIRequest(
+                // Create sample dates for demonstration
+                let calendar = Calendar.current
+                let checkinDate = calendar.date(byAdding: .day, value: 7, to: Date())
+                let checkoutDate = calendar.date(byAdding: .day, value: 9, to: Date())
+                
+                let response = try await RiviAskAI.performAskAIRequest(
                     query: userQuery,
                     searchId: searchId,
                     isRound: false,
+                    queryType: selectedQueryType,
+                    language: selectedLanguage,
+                    currency: "SAR",
+                    checkin: checkinDate,
+                    checkout: checkoutDate,
+                    destination: selectedQueryType == .hotel ? "Singapore" : "Dubai",
+                    origin: "Riyadh",
                     authToken: authToken
                 )
+                
+                filterChips = response.chips
+                parameterChangeNotice = response.parameterChangeNotice
+                
+                // Show alert if there's a parameter change notice
+                if !(response.parameterChangeNotice?.isEmpty ?? true) {
+                    withAnimation(.easeInOut) {
+                        showAlert = true
+                    }
+                }
             } catch {
                 print("Error: \(error)")
             }
@@ -364,5 +497,50 @@ struct ContentView: View {
         RiviAskAI.disconnect()
         isSubscribed = false
         sseEvents.append("Disconnected from SSE stream")
+    }
+    
+    // Sort Best - Automatic sorting without query
+    private func performSortBest() {
+        Task {
+            do {
+                // Create sample dates for demonstration
+                let calendar = Calendar.current
+                let checkinDate = calendar.date(byAdding: .day, value: 7, to: Date())
+                let checkoutDate = calendar.date(byAdding: .day, value: 9, to: Date())
+                
+                let response = try await RiviAskAI.performSortBestRequest(
+                    searchId: searchId,
+                    isRound: false,
+                    queryType: selectedQueryType,
+                    language: selectedLanguage,
+                    currency: "SAR",
+                    checkin: checkinDate,
+                    checkout: checkoutDate,
+                    destination: selectedQueryType == .hotel ? "Singapore" : "Dubai",
+                    origin: "Riyadh",
+                    authToken: authToken
+                )
+                
+                filterChips = response.chips
+                parameterChangeNotice = response.parameterChangeNotice
+                
+                // Access raw response if needed
+                print("Sort-Best Raw Response: \(response.rawResponse)")
+                if let entity = response.entity {
+                    print("Sort-Best Entity: \(entity)")
+                    // Access any field from the entity
+                    if let starRating = entity["star_rating"] as? [String] {
+                        print("Star Ratings: \(starRating)")
+                    }
+                }
+                
+                // Show alert if there's a parameter change notice
+                if response.parameterChangeNotice != nil && !response.parameterChangeNotice!.isEmpty {
+                    showAlert = true
+                }
+            } catch {
+                print("Error: \(error)")
+            }
+        }
     }
 }

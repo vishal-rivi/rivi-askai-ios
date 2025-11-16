@@ -80,7 +80,7 @@ public struct RiviChipsView: View {
     @Binding private var chips: Set<String>
     
     /// The action to perform when a chip is removed
-    private let onRemove: ((String) -> Void)?
+    private let onRemove: ((String) -> Void)
     
     // MARK: - Initialization
     
@@ -88,7 +88,7 @@ public struct RiviChipsView: View {
     public init(
         configuration: RiviChipsView.Configuration = .default,
         chips: Binding<Set<String>>,
-        onRemove: ((String) -> Void)? = nil
+        onRemove: @escaping ((String) -> Void)
     ) {
         self.configuration = configuration
         self._chips = chips
@@ -137,6 +137,6 @@ public struct RiviChipsView: View {
     
     private func removeChip(_ chip: String) {
         chips.remove(chip)
-        onRemove?(chip)
+        onRemove(chip)
     }
 }
