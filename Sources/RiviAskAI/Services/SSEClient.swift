@@ -45,7 +45,7 @@ public class SSEClient {
             finalRequest.timeoutInterval = TimeInterval(Double.infinity)
             finalRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         }
-                
+        
         task = urlSession?.dataTask(with: finalRequest)
         task?.resume()
         isConnected = true
@@ -58,7 +58,7 @@ public class SSEClient {
             Logger.logError(message: "Received non-UTF8 data")
             return
         }
-            
+        
         buffer += dataString
         
         // Process any complete events in the buffer
@@ -141,4 +141,4 @@ private class SSESessionDelegate: NSObject, URLSessionDataDelegate {
             client?.handleError(error)
         }
     }
-} 
+}

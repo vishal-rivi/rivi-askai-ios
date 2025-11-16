@@ -272,13 +272,11 @@ public struct RiviAskAISheet: View {
                     
                     if configuration.showInfoButton {
                         Button {
-                            showTooltip.toggle()
+                            showTooltip = true
                             
                             // Auto-hide tooltip after 3 seconds
-                            if showTooltip {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                    showTooltip = false
-                                }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                showTooltip = false
                             }
                         } label: {
                             Image("ic_info", bundle: .module)

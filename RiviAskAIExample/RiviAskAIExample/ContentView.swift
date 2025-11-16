@@ -22,8 +22,8 @@ struct ContentView: View {
     @State private var selectedLanguage: Language = .english
     
     // Constants for API calls
-    private let searchId = "meacv3WCaXhxHVnI"
-    private let authToken = "f5ec3434007443aaac7570d96d2292ba54f00f5892a3057dfa08ab4f8aba0597"
+    private let searchId = "[Search ID]"
+    private let authToken = "[Auth Token]"
     
     var body: some View {
         NavigationView {
@@ -525,12 +525,10 @@ struct ContentView: View {
                 parameterChangeNotice = response.parameterChangeNotice
                 
                 // Access raw response if needed
-                print("Sort-Best Raw Response: \(response.rawResponse)")
                 if let entity = response.entity {
-                    print("Sort-Best Entity: \(entity)")
                     // Access any field from the entity
                     if let starRating = entity["star_rating"] as? [String] {
-                        print("Star Ratings: \(starRating)")
+                        // starRating value
                     }
                 }
                 

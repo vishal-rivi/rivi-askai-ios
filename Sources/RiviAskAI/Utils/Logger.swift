@@ -8,7 +8,7 @@ public enum Logger {
     ///   - url: The request URL
     ///   - params: The request parameters
     public static func logRequest(url: URL, params: [String: Any]) {
-        #if DEBUG
+#if DEBUG
         let divider = String(repeating: "=", count: 80)
         print("\n\(divider)")
         print("🔵 ASK AI REQUEST")
@@ -23,7 +23,7 @@ public enum Logger {
         }
         
         print(divider)
-        #endif
+#endif
     }
     
     /// Logs API response details
@@ -32,7 +32,7 @@ public enum Logger {
     ///   - statusCode: The HTTP status code
     ///   - data: The response data
     public static func logResponse(url: URL, statusCode: Int, data: Data) {
-        #if DEBUG
+#if DEBUG
         let divider = String(repeating: "=", count: 80)
         print("\n\(divider)")
         print("🟢 ASK AI RESPONSE")
@@ -46,7 +46,7 @@ public enum Logger {
         }
         
         print(divider)
-        #endif
+#endif
     }
     
     /// Logs error details
@@ -54,7 +54,7 @@ public enum Logger {
     ///   - message: The error message
     ///   - error: Optional Error object
     public static func logError(message: String, error: Error? = nil) {
-        #if DEBUG
+#if DEBUG
         let divider = String(repeating: "-", count: 80)
         print("\n\(divider)")
         print("❌ ASK AI ERROR")
@@ -64,7 +64,7 @@ public enum Logger {
             print("📍 Error: \(error.localizedDescription)")
         }
         print(divider)
-        #endif
+#endif
     }
     
     /// Formats a JSON string with proper indentation

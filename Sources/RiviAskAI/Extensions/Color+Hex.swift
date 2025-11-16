@@ -11,10 +11,10 @@ extension Color {
     init(light: String, dark: String) {
         self.init(uiColor: UIColor { traitCollection in
             switch traitCollection.userInterfaceStyle {
-                case .dark:
-                    return UIColor(hex: dark) ?? .black
-                default:
-                    return UIColor(hex: light) ?? .white
+            case .dark:
+                return UIColor(hex: dark) ?? .black
+            default:
+                return UIColor(hex: light) ?? .white
             }
         })
     }
