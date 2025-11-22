@@ -14,9 +14,6 @@ public struct AskAIRequest {
     /// The type of query (hotel or flight)
     public let queryType: QueryType
     
-    /// The language for the request
-    public let language: Language
-    
     /// The currency code (e.g., SAR, AED, USD, INR)
     public let currency: String
     
@@ -32,45 +29,36 @@ public struct AskAIRequest {
     /// Origin location
     public let origin: String
     
-    /// Authorization token for API requests
-    public let authToken: String?
-    
     /// Initialize a new AskAI request
     /// - Parameters:
     ///   - filterQuery: The filter query string
     ///   - searchId: The search ID
     ///   - isRound: Whether this is a round trip flight
     ///   - queryType: The type of query (hotel or flight)
-    ///   - language: The language for the request
     ///   - currency: The currency code
     ///   - checkin: Check-in date (optional)
     ///   - checkout: Check-out date (optional)
     ///   - destination: Destination location
     ///   - origin: Origin location
-    ///   - authToken: Authorization token for API requests
     public init(
         filterQuery: String,
         searchId: String,
         isRound: Bool = false,
         queryType: QueryType,
-        language: Language = .english,
         currency: String,
         checkin: Date? = nil,
         checkout: Date? = nil,
         destination: String,
-        origin: String,
-        authToken: String? = nil
+        origin: String
     ) {
         self.filterQuery = filterQuery
         self.searchId = searchId
         self.isRound = isRound
         self.queryType = queryType
-        self.language = language
         self.currency = currency
         self.checkin = checkin
         self.checkout = checkout
         self.destination = destination
         self.origin = origin
-        self.authToken = authToken
     }
 }

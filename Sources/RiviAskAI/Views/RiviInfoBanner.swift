@@ -46,8 +46,8 @@ public struct RiviInfoBanner: View {
         public static var `default`: Configuration {
             Configuration(
                 iconName: "ic_info_2",
-                titleText: "Some results may not match all your preferences",
-                descriptionText: "The best result is chosen for overall relevance, balancing your preferences with price and availability.",
+                titleText: "info_banner_title".localized(),
+                descriptionText: "info_banner_description".localized(),
                 titleFont: .system(size: 12, weight: .medium),
                 descriptionFont: .system(size: 11, weight: .regular),
                 cornerRadius: 8,
@@ -146,5 +146,6 @@ public struct RiviInfoBanner: View {
                 .stroke(configuration.borderColor, lineWidth: 1)
         )
         .padding(1)
+        .environment(\.layoutDirection, RiviAskAIConfiguration.shared.language.layoutDirection)
     }
 }

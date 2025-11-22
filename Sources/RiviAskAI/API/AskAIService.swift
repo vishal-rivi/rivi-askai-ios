@@ -17,12 +17,10 @@ public protocol AskAIServiceProtocol {
     /// Subscribe to SSE events for a search ID
     /// - Parameters:
     ///   - searchId: The search ID to subscribe to
-    ///   - authToken: The authorization token
     ///   - onEvent: Callback for received events
     ///   - onError: Callback for connection errors
     func subscribeToEvents(
         searchId: String,
-        authToken: String,
         onEvent: @escaping (String) -> Void,
         onError: @escaping (Error) -> Void
     )
@@ -33,13 +31,9 @@ public protocol AskAIServiceProtocol {
 
 /// Implementation of the AskAI API service
 public class AskAIService: AskAIServiceProtocol {
-    private let baseURL: String
     private var sseClient: SSEClient?
     
-    /// Initialize with a base URL
-    /// - Parameter baseURL: The base URL for API requests
-    public init(baseURL: String = "https://askai-gateway.rivi.co/api/v1") {
-        self.baseURL = baseURL
+    public init() {
         self.sseClient = SSEClient()
     }
     
@@ -49,7 +43,7 @@ public class AskAIService: AskAIServiceProtocol {
     /// - Throws: Error if the request fails
     public func performSortBestRequest(request: AskAIRequest) async throws -> AskAIResponse {
         // Create the URL request
-        let urlString = "\(baseURL)/askai/sort-best"
+        let urlString = "\(RiviAskAIConfiguration.shared.baseURL)/askai/sort-best"
         guard let url = URL(string: urlString) else {
             let error = NSError(
                 domain: "RiviAskAI",
@@ -65,7 +59,7 @@ public class AskAIService: AskAIServiceProtocol {
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         // Add authorization header if available
-        if let authToken = request.authToken {
+        if let authToken = RiviAskAIConfiguration.shared.authToken {
             urlRequest.setValue(authToken, forHTTPHeaderField: "authorization")
         }
         
@@ -75,7 +69,7 @@ public class AskAIService: AskAIServiceProtocol {
             "is_round": request.isRound,
             "query_type": request.queryType.rawValue,
             "context": request.queryType.rawValue,  // Same as query_type
-            "language": request.language.rawValue,
+            "language": RiviAskAIConfiguration.shared.language.rawValue,
             "currency": request.currency,
             "destination": request.destination,
             "origin": request.origin
@@ -188,7 +182,7 @@ public class AskAIService: AskAIServiceProtocol {
     /// - Throws: Error if the request fails
     public func performAskAIRequest(request: AskAIRequest) async throws -> AskAIResponse {
         // Create the URL request
-        let urlString = "\(baseURL)/askai"
+        let urlString = "\(RiviAskAIConfiguration.shared.baseURL)/askai"
         guard let url = URL(string: urlString) else {
             let error = NSError(
                 domain: "RiviAskAI",
@@ -204,7 +198,7 @@ public class AskAIService: AskAIServiceProtocol {
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         // Add authorization header if available
-        if let authToken = request.authToken {
+        if let authToken = RiviAskAIConfiguration.shared.authToken {
             urlRequest.setValue(authToken, forHTTPHeaderField: "authorization")
         }
         
@@ -214,7 +208,7 @@ public class AskAIService: AskAIServiceProtocol {
             "search_id": request.searchId,
             "is_round": request.isRound,
             "query_type": request.queryType.rawValue,
-            "language": request.language.rawValue,
+            "language": RiviAskAIConfiguration.shared.language.rawValue,
             "currency": request.currency,
             "destination": request.destination,
             "origin": request.origin
@@ -324,16 +318,15 @@ public class AskAIService: AskAIServiceProtocol {
     /// Subscribe to SSE events for a search ID
     /// - Parameters:
     ///   - searchId: The search ID to subscribe to
-    ///   - authToken: The authorization token
     ///   - onEvent: Callback for received events
     ///   - onError: Callback for connection errors
     public func subscribeToEvents(
         searchId: String,
-        authToken: String,
         onEvent: @escaping (String) -> Void,
         onError: @escaping (Error) -> Void
     ) {
-        let urlString = "\(baseURL)/askai/subscribe?searchId=\(searchId)"
+        let authToken = RiviAskAIConfiguration.shared.authToken ?? ""
+        let urlString = "\(RiviAskAIConfiguration.shared.baseURL)/askai/subscribe?searchId=\(searchId)&authorization=\(authToken)"
         guard let url = URL(string: urlString) else {
             let error = NSError(
                 domain: "RiviAskAI",
@@ -345,9 +338,8 @@ public class AskAIService: AskAIServiceProtocol {
             return
         }
         
-        // Create a request with authorization header
-        var request = URLRequest(url: url)
-        request.setValue(authToken, forHTTPHeaderField: "authorization")
+        // Create a request
+        let request = URLRequest(url: url)
         
         Logger.logRequest(url: url, params: ["searchId": searchId, "event": "connect"])
         
@@ -366,7 +358,7 @@ public class AskAIService: AskAIServiceProtocol {
     
     /// Disconnect from the SSE connection
     public func disconnect() {
-        Logger.logRequest(url: URL(string: "\(baseURL)/disconnect")!, params: ["message": "Disconnecting SSE client"])
+        Logger.logRequest(url: URL(string: "\(RiviAskAIConfiguration.shared.baseURL)/disconnect")!, params: ["message": "Disconnecting SSE client"])
         sseClient?.disconnect()
     }
     

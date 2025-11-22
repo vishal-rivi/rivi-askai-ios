@@ -9,6 +9,7 @@ struct ContentView: View {
     @State private var userQuery: String = ""
     @State private var parameterChangeNotice: String? = nil
     @State private var showAlert = false
+    @State private var showConfirmationDialog = false
     
     // Custom UI states
     @State private var showCustomSheet = false
@@ -21,9 +22,19 @@ struct ContentView: View {
     @State private var selectedQueryType: QueryType = .hotel
     @State private var selectedLanguage: Language = .english
     
+    // Layout direction based on language
+    @State private var layoutDirection: LayoutDirection = .leftToRight
+    
     // Constants for API calls
-    private let searchId = "[Search ID]"
-    private let authToken = "[Auth Token]"
+    private let searchId = ""
+ 
+    init() {
+        RiviAskAI.initialize(
+            environment: .staging,
+            authToken: "",
+            language: .english
+        )
+    }
     
     var body: some View {
         NavigationView {
@@ -47,17 +58,47 @@ struct ContentView: View {
                     
                     Spacer()
                 }
+                .padding()
             }
             .navigationTitle("RiviAskAI Demo")
-            .padding()
             .overlay {
                 if showAlert {
                     RiviAlertDialog(isPresented: $showAlert) {
                         print("Alert dismissed")
                     }
                 }
+                
+                if showConfirmationDialog {
+                    RiviConfirmationDialog(
+                        isPresented: $showConfirmationDialog,
+                        onCancel: {
+                            print("Confirmation cancelled")
+                        },
+                        onConfirm: {
+                            print("Confirmation confirmed - clearing query")
+                            filterChips = []
+                            userQuery = ""
+                        }
+                    )
+                }
+            }
+            .onChange(of: selectedLanguage) { _, newValue in
+                // Reinitialize RiviAskAI with new language
+                RiviAskAI.initialize(
+                    environment: .staging,
+                    authToken: "",
+                    language: newValue
+                )
+                
+                // Update layout direction
+                withAnimation {
+                    layoutDirection = RiviAskAIConfiguration.shared.language.layoutDirection
+                }
+                
+                print("Language changed to: \(newValue == .english ? "English" : "Arabic")")
             }
         }
+        .environment(\.layoutDirection, layoutDirection)
     }
     
     // MARK: - Package UI Flow
@@ -260,10 +301,18 @@ struct ContentView: View {
             }
             .padding(.top, 20)
             
-            // Test alert button
-            Button("Test Alert Dialog") {
-                withAnimation(.easeInOut) {
-                    showAlert = true
+            // Test dialogs buttons
+            HStack(spacing: 12) {
+                Button("Test Alert Dialog") {
+                    withAnimation(.easeInOut) {
+                        showAlert = true
+                    }
+                }
+                
+                Button("Test Confirmation Dialog") {
+                    withAnimation(.easeInOut) {
+                        showConfirmationDialog = true
+                    }
                 }
             }
             .padding(.top, 8)
@@ -309,20 +358,16 @@ struct ContentView: View {
                     .font(.subheadline)
                     .bold()
                 
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 8) {
-                        ForEach(sseEvents.indices, id: \.self) { index in
-                            Text(sseEvents[index])
-                                .font(.system(size: 12, design: .monospaced))
-                                .padding(8)
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(4)
-                        }
+                LazyVStack(alignment: .leading, spacing: 8) {
+                    ForEach(sseEvents.indices, id: \.self) { index in
+                        Text(sseEvents[index])
+                            .font(.system(size: 12, design: .monospaced))
+                            .padding(8)
+                            .background(Color.gray.opacity(0.1))
+                            .lineLimit(10)
+                            .cornerRadius(4)
                     }
                 }
-                .frame(height: 300)
-                .background(Color.gray.opacity(0.05))
-                .cornerRadius(8)
             }
         }
     }
@@ -447,13 +492,11 @@ struct ContentView: View {
                     searchId: searchId,
                     isRound: false,
                     queryType: selectedQueryType,
-                    language: selectedLanguage,
                     currency: "SAR",
                     checkin: checkinDate,
                     checkout: checkoutDate,
                     destination: selectedQueryType == .hotel ? "Singapore" : "Dubai",
-                    origin: "Riyadh",
-                    authToken: authToken
+                    origin: "Riyadh"
                 )
                 
                 filterChips = response.chips
@@ -475,7 +518,6 @@ struct ContentView: View {
     private func subscribeToEvents() {
         RiviAskAI.subscribeToEvents(
             searchId: searchId,
-            authToken: authToken,
             onEvent: { eventData in
                 // Limit the number of displayed events to avoid memory issues
                 if self.sseEvents.count > 100 {
@@ -512,13 +554,11 @@ struct ContentView: View {
                     searchId: searchId,
                     isRound: false,
                     queryType: selectedQueryType,
-                    language: selectedLanguage,
                     currency: "SAR",
                     checkin: checkinDate,
                     checkout: checkoutDate,
                     destination: selectedQueryType == .hotel ? "Singapore" : "Dubai",
-                    origin: "Riyadh",
-                    authToken: authToken
+                    origin: "Riyadh"
                 )
                 
                 filterChips = response.chips
