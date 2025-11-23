@@ -105,6 +105,7 @@ public struct RiviChipsView: View {
                 }
             }
         }
+        .environment(\.layoutDirection, RiviAskAIConfiguration.shared.language.layoutDirection)
     }
     
     // MARK: - Helper Views

@@ -37,7 +37,7 @@ public struct RiviAskAIButton: View {
         /// Create a default configuration
         public static var `default`: Configuration {
             Configuration(
-                text: "Ask AI",
+                text: "ask_ai_button_text".localized(),
                 font: .system(size: 14, weight: .medium),
                 showIcon: true,
                 spacing: 6,
@@ -127,5 +127,6 @@ public struct RiviAskAIButton: View {
             .background(isEnabled ? configuration.backgroundColor : configuration.disabledBackgroundColor)
             .clipShape(RoundedRectangle(cornerRadius: configuration.cornerRadius))
         }
+        .environment(\.layoutDirection, RiviAskAIConfiguration.shared.language.layoutDirection)
     }
 }

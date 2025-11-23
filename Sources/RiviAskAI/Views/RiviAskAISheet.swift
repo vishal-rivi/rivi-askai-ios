@@ -71,9 +71,9 @@ public struct RiviAskAISheet: View {
         /// Create a default configuration
         public static var `default`: Configuration {
             Configuration(
-                titleText: "Ask AI",
+                titleText: "ask_ai_sheet_title".localized(),
                 placeholderText: "",
-                submitButtonText: "Improve Results",
+                submitButtonText: "ask_ai_sheet_submit_button".localized(),
                 infoTooltipText: "",
                 titleFont: .system(size: 18, weight: .regular),
                 inputFont: .system(size: 16, weight: .regular),
@@ -211,9 +211,9 @@ public struct RiviAskAISheet: View {
             modifiedConfig.infoTooltipText =
             switch queryType {
             case .hotel:
-                "AI intelligently sorts hotels to prioritize your preferences - without filtering results."
+                "ask_ai_sheet_tooltip_hotel".localized()
             case .flight:
-                "AI intelligently sorts flights to prioritize your preferences - without filtering results."
+                "ask_ai_sheet_tooltip_flight".localized()
             }
         }
         
@@ -222,9 +222,9 @@ public struct RiviAskAISheet: View {
             modifiedConfig.placeholderText =
             switch queryType {
             case .hotel:
-                "e.g. 4 star hotels near the airport with free breakfast"
+                "ask_ai_sheet_placeholder_hotel".localized()
             case .flight:
-                "e.g. Direct flights that reach before 4PM with meals included"
+                "ask_ai_sheet_placeholder_flight".localized()
             }
         }
         
@@ -242,11 +242,13 @@ public struct RiviAskAISheet: View {
                 .readSize(onChange: { size in
                     sheetContentHeight = size.height
                 })
+                .environment(\.layoutDirection, RiviAskAIConfiguration.shared.language.layoutDirection)
                 .presentationDetents([.height(sheetContentHeight)])
                 .presentationDragIndicator(.hidden)
         } else {
             // Fallback on earlier versions
             content()
+                .environment(\.layoutDirection, RiviAskAIConfiguration.shared.language.layoutDirection)
         }
     }
     
@@ -327,8 +329,8 @@ public struct RiviAskAISheet: View {
             if let notice = parameterChangeNotice, !notice.isEmpty {
                 let warningConfig = RiviInfoBanner.Configuration(
                     iconName: "ic_warning",
-                    titleText: "Your prompt includes changes to trip details",
-                    descriptionText: "To update trip details, use the search fields above.",
+                    titleText: "parameter_change_warning_title".localized(),
+                    descriptionText: "parameter_change_warning_description".localized(),
                     titleFont: .system(size: 12, weight: .medium),
                     descriptionFont: .system(size: 11, weight: .regular),
                     cornerRadius: 8,
@@ -348,41 +350,22 @@ public struct RiviAskAISheet: View {
                     .padding(.horizontal, configuration.padding.leading)
             }
             
-            if #available(iOS 16.0, *) {
-                TextField(
-                    configuration.placeholderText,
-                    text: $userQuery,
-                    axis: .vertical
-                )
-                .font(configuration.inputFont)
-                .foregroundStyle(configuration.textColor)
-                .lineLimit(configuration.lineLimit, reservesSpace: true)
-                .padding(12)
-                .background(configuration.textFieldBackgroundColor)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(configuration.textFieldBorderColor, lineWidth: 1)
-                )
-                .padding(.horizontal, configuration.padding.leading)
-            } else {
-                // Fallback on earlier versions
-                TextField(
-                    configuration.placeholderText,
-                    text: $userQuery
-                )
-                .font(configuration.inputFont)
-                .foregroundStyle(configuration.textColor)
-                .lineLimit(configuration.lineLimit)
-                .padding(12)
-                .background(configuration.textFieldBackgroundColor)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(configuration.textFieldBorderColor, lineWidth: 1)
-                )
-                .padding(.horizontal, configuration.padding.leading)
-            }
+            TextField(
+                configuration.placeholderText,
+                text: $userQuery,
+                axis: .vertical
+            )
+            .font(configuration.inputFont)
+            .foregroundStyle(configuration.textColor)
+            .lineLimit(configuration.lineLimit, reservesSpace: true)
+            .padding(12)
+            .background(configuration.textFieldBackgroundColor)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(configuration.textFieldBorderColor, lineWidth: 1)
+            )
+            .padding(.horizontal, configuration.padding.leading)
             
             // Improve Results button
             Button(action: {

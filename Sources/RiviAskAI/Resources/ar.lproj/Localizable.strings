@@ -1,0 +1,31 @@
+/* Arabic Localizations */
+
+/* RiviAskAIButton */
+"ask_ai_button_text" = "اسأل الذكاء الاصطناعي";
+
+/* RiviAskAISheet */
+"ask_ai_sheet_title" = "اسأل الذكاء الاصطناعي";
+"ask_ai_sheet_placeholder_hotel" = "مثال: فنادق 4 نجوم بالقرب من المطار مع إفطار مجاني";
+"ask_ai_sheet_placeholder_flight" = "مثال: رحلات مباشرة تصل قبل الساعة 4 مساءً مع وجبات";
+"ask_ai_sheet_submit_button" = "تحسين النتائج";
+"ask_ai_sheet_tooltip_hotel" = "يقوم الذكاء الاصطناعي بترتيب الفنادق بذكاء لإعطاء الأولوية لتفضيلاتك - دون تصفية النتائج.";
+"ask_ai_sheet_tooltip_flight" = "يقوم الذكاء الاصطناعي بترتيب الرحلات بذكاء لإعطاء الأولوية لتفضيلاتك - دون تصفية النتائج.";
+
+/* RiviInfoBanner */
+"info_banner_title" = "نتائج مرتبة بالذكاء الاصطناعي";
+"info_banner_description" = "يتم ترتيب النتائج بذكاء بناءً على تفضيلاتك";
+
+/* RiviAlertDialog */
+"alert_dialog_title" = "تم اكتشاف تغيير في المعاملات";
+"alert_dialog_description" = "يتضمن طلبك تغييرات في تفاصيل الرحلة. لتحديث تفاصيل الرحلة، استخدم حقول البحث أعلاه.";
+"alert_dialog_button" = "حسناً";
+
+/* Parameter Change Warning */
+"parameter_change_warning_title" = "يتضمن طلبك تغييرات في تفاصيل الرحلة";
+"parameter_change_warning_description" = "لتحديث تفاصيل الرحلة، استخدم حقول البحث أعلاه.";
+
+/* RiviConfirmationDialog */
+"clear_query_dialog_title" = "مسح استعلام الذكاء الاصطناعي";
+"clear_query_dialog_description" = "سيتم مسح استعلامك النشط لتغيير الترتيب. هل تريد المتابعة؟";
+"clear_query_dialog_cancel" = "رجوع";
+"clear_query_dialog_confirm" = "متابعة";

@@ -5,8 +5,9 @@ import PackageDescription
 
 let package = Package(
     name: "RiviAskAI",
+    defaultLocalization: "en",
     platforms: [
-        .iOS(.v15), // Requires iOS 15.0 or later
+        .iOS(.v16), // Requires iOS 16.0 or later
         .macOS(.v12) // Requires macOS 12.0 or later
     ],
     products: [
@@ -20,7 +21,9 @@ let package = Package(
         .target(
             name: "RiviAskAI",
             resources: [
-                .process("Resources/Assets.xcassets")
+                .process("Resources/Assets.xcassets"),
+                .process("Resources/en.lproj"),
+                .process("Resources/ar.lproj")
             ]
         ),
     ]

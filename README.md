@@ -23,13 +23,13 @@
 Add RiviAskAI to your project using Swift Package Manager:
 
 1. In Xcode, select **File > Add Packages...**
-2. Enter the package repository URL:
+2. Enter the package repository URL: https://github.com/vishal-rivi/rivi-askai-ios.git
 3. Select the latest version
 4. Click **Add Package**
 
 ### Requirements
 
-- iOS 15.0+ / macOS 12.0+
+- iOS 16.0+ / macOS 12.0+
 - Swift 5.9+
 - Xcode 14.0+
 
@@ -44,6 +44,45 @@ Before using RiviAskAI, you need:
 1. **Search ID**: Obtained from your initial search API call
 2. **Authorization Token**: Your API authentication token
 3. **Trip Details**: Origin, destination, dates (for hotels), and other search parameters
+
+### Initialization
+
+Initialize the package once at app startup to configure the environment, auth token, and language:
+
+```swift
+import SwiftUI
+import RiviAskAI
+
+@main
+struct YourApp: App {
+    init() {
+        // Initialize RiviAskAI with environment, auth token, and language
+        RiviAskAI.initialize(
+            environment: .staging,  // or .production or .custom(baseURL:)
+            authToken: "YOUR_AUTH_TOKEN",
+            language: .english  // or .arabic
+        )
+    }
+    
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+**Parameters:**
+- `environment`: `.staging`, `.production`, or `.custom(baseURL: "...")`
+- `authToken`: Your authorization token (required)
+- `language`: `.english` or `.arabic`
+
+**Environments:**
+- `.staging`: Uses `https://askai-gateway-staging.rivi.co/api/v1`
+- `.production`: Uses `https://askai-gateway.rivi.co/api/v1`
+- `.custom(baseURL:)`: Uses your custom base URL
+
+After initialization, the auth token and language are used globally for all API calls.
 
 ### Basic Setup
 
@@ -94,22 +133,89 @@ struct ContentView: View {
 
 The main entry point for all package functionality.
 
-#### 1. Sort Best API (Initial Sorting)
+**Recommended Flow:**
+1. Get searchId from your search API
+2. Subscribe to SSE events (to receive sorted results)
+3. Call Sort Best API (for automatic sorting)
+4. Call Ask AI API (when user enters a query)
 
-Automatically sorts search results without a user query. Call this immediately after receiving your search ID.
+#### 1. Subscribe to Events (SSE)
+
+Subscribe to real-time sorted results via Server-Sent Events. **Call this immediately after receiving your search ID** to start receiving sorted results.
+
+
+
+
+
+```swift
+public static func subscribeToEvents(
+    searchId: String,
+    onEvent: @escaping (String) -> Void,
+    onError: @escaping (Error) -> Void
+)
+```
+
+**Parameters:**
+- `searchId`: The search identifier from your initial search
+- `onEvent`: Callback receiving JSON event data as string
+- `onError`: Callback for connection errors
+
+**Returns:** Nothing (void). Results are delivered via the `onEvent` callback.
+
+**Note:** Auth token is automatically used from global configuration set during initialization.
+
+**Example:**
+
+```swift
+// Step 1: Get searchId from your search API
+let searchResponse = try await yourSearchAPI.search(...)
+let searchId = searchResponse.searchId
+
+// Step 2: Subscribe to SSE immediately
+RiviAskAI.subscribeToEvents(
+    searchId: searchId,
+    onEvent: { jsonData in
+        // Parse and display sorted results
+        print("Received sorted results: \(jsonData)")
+        
+        // Parse JSON and update UI
+        if let data = jsonData.data(using: .utf8),
+           let results = try? JSONDecoder().decode([YourResultModel].self, from: data) {
+            DispatchQueue.main.async {
+                self.displayResults(results)
+            }
+        }
+    },
+    onError: { error in
+        print("SSE Error: \(error)")
+        // Handle connection errors
+    }
+)
+
+// Step 3: Now call Sort Best or Ask AI APIs
+// The sorted results will be delivered via the onEvent callback above
+```
+
+**Important Notes:**
+- Subscribe to SSE **before** calling Sort Best or Ask AI APIs
+- The SSE connection will deliver sorted results whenever you call Sort Best or Ask AI
+- Keep the connection active while displaying results
+- Call `disconnect()` when leaving the results screen
+
+#### 2. Sort Best API (Initial Sorting)
+
+Automatically sorts search results without a user query. **Call this after subscribing to SSE** to get initial sorted results.
 
 ```swift
 public static func performSortBestRequest(
     searchId: String,
     isRound: Bool = false,
     queryType: QueryType,
-    language: Language = .english,
     currency: String,
     checkin: Date? = nil,
     checkout: Date? = nil,
     destination: String,
-    origin: String,
-    authToken: String? = nil
+    origin: String
 ) async throws -> AskAIResponse
 ```
 
@@ -117,13 +223,11 @@ public static func performSortBestRequest(
 - `searchId`: The search identifier from your initial search
 - `isRound`: Whether this is a round trip flight (default: false)
 - `queryType`: `.hotel` or `.flight`
-- `language`: `.english` or `.arabic` (default: .english)
 - `currency`: Currency code (e.g., "SAR", "AED", "USD", "INR")
 - `checkin`: Check-in date (required for hotels)
 - `checkout`: Check-out date (required for hotels)
 - `destination`: Destination location
 - `origin`: Origin location
-- `authToken`: Authorization token
 
 **Returns:** `AskAIResponse` containing:
 - `chips`: Set of filter chips to display
@@ -140,28 +244,26 @@ Task {
             searchId: searchId,
             isRound: false,
             queryType: .hotel,
-            language: .english,
             currency: "SAR",
             checkin: checkinDate,
             checkout: checkoutDate,
             destination: "Singapore",
-            origin: "Riyadh",
-            authToken: authToken
+            origin: "Riyadh"
         )
         
+        // Display chips returned from API
         filterChips = response.chips
         
-        // Subscribe to SSE for sorted results
-        subscribeToResults()
+        // Sorted results will be delivered via SSE onEvent callback
     } catch {
         print("Error: \(error)")
     }
 }
 ```
 
-#### 2. Ask AI API (User Query)
+#### 3. Ask AI API (User Query)
 
-Process a natural language query from the user to refine sorting.
+Process a natural language query from the user to refine sorting. **Call this when user enters a query** to get refined sorted results.
 
 ```swift
 public static func performAskAIRequest(
@@ -169,13 +271,11 @@ public static func performAskAIRequest(
     searchId: String,
     isRound: Bool = false,
     queryType: QueryType,
-    language: Language = .english,
     currency: String,
     checkin: Date? = nil,
     checkout: Date? = nil,
     destination: String,
-    origin: String,
-    authToken: String? = nil
+    origin: String
 ) async throws -> AskAIResponse
 ```
 
@@ -192,15 +292,14 @@ Task {
             searchId: searchId,
             isRound: false,
             queryType: .hotel,
-            language: .english,
             currency: "SAR",
             checkin: checkinDate,
             checkout: checkoutDate,
             destination: "Dubai",
-            origin: "Riyadh",
-            authToken: authToken
+            origin: "Riyadh"
         )
         
+        // Display chips returned from API
         filterChips = response.chips
         
         // Check for parameter change warning
@@ -208,50 +307,11 @@ Task {
             showWarning(notice)
         }
         
-        // Subscribe to SSE for updated sorted results
-        subscribeToResults()
+        // Sorted results will be delivered via SSE onEvent callback
     } catch {
         print("Error: \(error)")
     }
 }
-```
-
-#### 3. Subscribe to Events (SSE)
-
-Subscribe to real-time sorted results via Server-Sent Events.
-
-```swift
-public static func subscribeToEvents(
-    searchId: String,
-    authToken: String,
-    onEvent: @escaping (String) -> Void,
-    onError: @escaping (Error) -> Void
-)
-```
-
-**Parameters:**
-- `searchId`: The search identifier
-- `authToken`: Authorization token
-- `onEvent`: Callback receiving JSON event data
-- `onError`: Callback for connection errors
-
-**Example:**
-
-```swift
-RiviAskAI.subscribeToEvents(
-    searchId: searchId,
-    authToken: authToken,
-    onEvent: { jsonData in
-        // Parse and display sorted results
-        if let data = jsonData.data(using: .utf8),
-           let results = try? JSONDecoder().decode([YourResultModel].self, from: data) {
-            displayResults(results)
-        }
-    },
-    onError: { error in
-        print("SSE Error: \(error)")
-    }
-)
 ```
 
 #### 4. Disconnect
@@ -276,7 +336,7 @@ override func viewWillDisappear(_ animated: Bool) {
 
 ## UI Components
 
-RiviAskAI provides five customizable SwiftUI views. Each view has a `Configuration` struct for complete customization.
+RiviAskAI provides six customizable SwiftUI views. Each view has a `Configuration` struct for complete customization.
 
 ### 1. RiviAskAIButton
 
@@ -510,6 +570,68 @@ RiviAlertDialog(
 - `iconSize`: Icon size
 - Color customization for all elements
 
+### 6. RiviConfirmationDialog
+
+Displays confirmation dialogs with two action buttons (Cancel and Confirm).
+
+**Basic Usage:**
+
+```swift
+if showConfirmationDialog {
+    RiviConfirmationDialog(
+        isPresented: $showConfirmationDialog,
+        onConfirm: {
+            // Handle confirmation
+            clearQuery()
+        }
+    )
+}
+```
+
+**With Cancel Callback:**
+
+```swift
+RiviConfirmationDialog(
+    isPresented: $showConfirmationDialog,
+    onCancel: {
+        print("User cancelled")
+    },
+    onConfirm: {
+        print("User confirmed")
+        clearQuery()
+    }
+)
+```
+
+**Custom Configuration:**
+
+```swift
+var customConfig = RiviConfirmationDialog.Configuration.default
+customConfig.titleText = "Custom Title"
+customConfig.descriptionText = "Custom description"
+customConfig.cancelButtonText = "Cancel"
+customConfig.confirmButtonText = "Confirm"
+
+RiviConfirmationDialog(
+    configuration: customConfig,
+    isPresented: $showConfirmationDialog,
+    onConfirm: { /* ... */ }
+)
+```
+
+**Configuration Options:**
+- `titleText`: Dialog title
+- `descriptionText`: Dialog description
+- `cancelButtonText`: Cancel button text
+- `confirmButtonText`: Confirm button text
+- `titleFont`, `descriptionFont`, `buttonFont`: Font customization
+- `cornerRadius`: Dialog corner radius
+- `padding`: Internal padding
+- `spacing`: Element spacing
+- `buttonSpacing`: Spacing between buttons
+- `buttonHeight`: Button height
+- Color customization for all elements (background, buttons, text, borders, overlay)
+
 ---
 
 ## Using Custom UI
@@ -562,8 +684,7 @@ struct CustomAskAIView: View {
                     checkin: checkinDate,
                     checkout: checkoutDate,
                     destination: "Dubai",
-                    origin: "Riyadh",
-                    authToken: authToken
+                    origin: "Riyadh"
                 )
                 
                 filterChips = response.chips
@@ -587,7 +708,29 @@ struct CustomAskAIView: View {
 
 ## Complete Integration Example
 
-### Step 1: Initial Search
+### Step 1: Initialize Package
+
+```swift
+// In your App struct
+@main
+struct YourApp: App {
+    init() {
+        RiviAskAI.initialize(
+            environment: .production,
+            authToken: "YOUR_AUTH_TOKEN",
+            language: .english
+        )
+    }
+    
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+### Step 2: Perform Initial Search
 
 ```swift
 // User performs search in your app
@@ -601,25 +744,28 @@ let searchResponse = try await yourSearchAPI.search(
 let searchId = searchResponse.searchId
 ```
 
-### Step 2: Subscribe to SSE
+### Step 3: Subscribe to SSE (Immediately)
 
 ```swift
+// Subscribe to SSE immediately after getting searchId
 func subscribeToSortedResults() {
     RiviAskAI.subscribeToEvents(
         searchId: searchId,
-        authToken: authToken,
         onEvent: { jsonData in
-            // Parse and display results
-            parseAndDisplayResults(jsonData)
+            // Parse and display sorted results
+            DispatchQueue.main.async {
+                self.parseAndDisplayResults(jsonData)
+            }
         },
         onError: { error in
             print("SSE Error: \(error)")
+            // Handle connection errors
         }
     )
 }
 ```
 
-### Step 3: Sort Best (Automatic Sorting)
+### Step 4: Sort Best (Automatic Sorting)
 
 ```swift
 // Immediately call sort-best
@@ -632,8 +778,7 @@ Task {
             checkin: checkinDate,
             checkout: checkoutDate,
             destination: "Dubai",
-            origin: "Riyadh",
-            authToken: authToken
+            origin: "Riyadh"
         )
         
         filterChips = response.chips
@@ -645,7 +790,7 @@ Task {
 }
 ```
 
-### Step 4: User Refines Search
+### Step 5: User Refines Search
 
 ```swift
 // User clicks Ask AI button and enters query
@@ -660,8 +805,7 @@ func handleUserQuery(_ query: String) {
                 checkin: checkinDate,
                 checkout: checkoutDate,
                 destination: "Dubai",
-                origin: "Riyadh",
-                authToken: authToken
+                origin: "Riyadh"
             )
             
             filterChips = response.chips
@@ -679,7 +823,7 @@ func handleUserQuery(_ query: String) {
 }
 ```
 
-### Step 5: Handle Chip Removal
+### Step 6: Handle Chip Removal
 
 ```swift
 func handleChipRemoval(_ removedChip: String) {
@@ -696,8 +840,7 @@ func handleChipRemoval(_ removedChip: String) {
                 checkin: checkinDate,
                 checkout: checkoutDate,
                 destination: "Dubai",
-                origin: "Riyadh",
-                authToken: authToken
+                origin: "Riyadh"
             )
             
             filterChips = response.chips
@@ -708,7 +851,7 @@ func handleChipRemoval(_ removedChip: String) {
 }
 ```
 
-### Step 6: Cleanup
+### Step 7: Cleanup
 
 ```swift
 deinit {
@@ -749,27 +892,82 @@ The example app covers all possible use cases and edge cases, providing a comple
 
 ---
 
-## Query Examples
+## Localization
 
-### Hotel Queries
+RiviAskAI supports English and Arabic localization for all UI components.
 
-- "4 star hotels near airport"
-- "Hotels with free breakfast and pool"
-- "Budget hotels under 500 SAR"
-- "5 star luxury hotels with spa"
-- "Hotels near downtown with parking"
+### Supported Languages
 
-### Flight Queries
+- **English** (`.english` or `"en"`)
+- **Arabic** (`.arabic` or `"ar"`)
 
-- "Direct flights only"
-- "Morning flights before 10 AM"
-- "Flights with Emirates or Etihad"
-- "Cheapest flights with 1 stop"
-- "Flights with meals included"
+### How It Works
+
+When you initialize with a language:
+
+```swift
+RiviAskAI.initialize(
+    environment: .staging,
+    authToken: "YOUR_AUTH_TOKEN",
+    language: .arabic
+)
+```
+
+All UI components automatically display in the selected language:
+- Button text
+- Sheet titles and placeholders
+- Tooltips
+- Info banners
+- Alert dialogs
+- Confirmation dialogs
+
+### RTL Support
+
+Arabic language automatically enables Right-to-Left (RTL) layout direction for all views.
+
+### Dynamic Language Switching
+
+You can change the language at runtime by reinitializing:
+
+```swift
+// Switch to Arabic
+RiviAskAI.initialize(
+    environment: .staging,
+    authToken: "YOUR_AUTH_TOKEN",
+    language: .arabic
+)
+
+// Update layout direction in your view
+.environment(\.layoutDirection, RiviAskAIConfiguration.shared.language.layoutDirection)
+```
+
+### Localized Components
+
+All package UI components are fully localized:
+- `RiviAskAIButton`
+- `RiviAskAISheet`
+- `RiviInfoBanner`
+- `RiviAlertDialog`
+- `RiviConfirmationDialog`
 
 ---
 
 ## Models Reference
+
+### RiviAskAIEnvironment
+
+```swift
+public enum RiviAskAIEnvironment {
+    case staging
+    case production
+    case custom(baseURL: String)
+}
+```
+
+**Values:**
+- `.staging`: Staging environment (`https://askai-gateway-staging.rivi.co/api/v1`)
+- `.production`: Production environment (`https://askai-gateway.rivi.co/api/v1`)
+- `.custom(baseURL:)`: Custom environment with your own base URL
 
 ### QueryType
 
@@ -786,6 +984,13 @@ public enum QueryType: String {
 public enum Language: String {
     case english = "en"
     case arabic = "ar"
+    
+    public var layoutDirection: LayoutDirection {
+        switch self {
+        case .english: return .leftToRight
+        case .arabic: return .rightToLeft
+        }
+    }
 }
 ```
 
@@ -862,6 +1067,13 @@ Never hardcode tokens in production:
 ```swift
 // Use Keychain or secure storage
 let authToken = KeychainManager.shared.getAuthToken()
+
+// Initialize with secure token
+RiviAskAI.initialize(
+    environment: .production,
+    authToken: authToken,
+    language: .english
+)
 ```
 
 ---
@@ -870,42 +1082,47 @@ let authToken = KeychainManager.shared.getAuthToken()
 
 ### Common Issues
 
-**1. No Chips Returned**
+**1. Package Not Initialized**
+- **Problem**: API calls fail or UI components show default English text
+- **Solution**: Ensure `RiviAskAI.initialize()` is called before any API calls or UI components are used
+- **Best Practice**: Call it in your App struct's `init()` method
+
+**2. No Chips Returned**
 - Verify searchId and authToken are correct
 - Ensure query is relevant to the query type (hotel/flight)
 - Check network connectivity
+- Confirm `RiviAskAI.initialize()` was called with valid token
 
-**2. SSE Connection Fails**
+**3. SSE Connection Fails**
 - Verify authToken is valid
 - Check network stability
 - Ensure you're not blocking the connection with firewalls
+- Confirm initialization was completed before subscribing
 
-**3. UI Not Updating**
+**4. UI Not Updating**
 - Ensure state updates are on main thread
 - Check bindings are properly set up
 - Verify @State variables are correctly declared
 
-**4. Parameter Change Warning Not Showing**
+**5. Parameter Change Warning Not Showing**
 - Check if `parameterChangeNotice` is nil
 - Verify you're displaying the warning in UI
 - Ensure alert/banner is properly configured
 
-**5. Chips Not Removing**
+**6. Chips Not Removing**
 - Verify onRemove callback is implemented
 - Check that you're updating the chips Set
 - Ensure you're re-processing the query after removal
 
----
+**7. Wrong Language Displayed**
+- **Problem**: UI components show wrong language
+- **Solution**: Verify you're passing the correct language to `initialize()`
+- **Check**: Use `RiviAskAIConfiguration.shared.language` to verify current language
 
-## API Endpoints
-
-The package communicates with the following endpoints:
-
-- **Sort Best**: `POST /api/v1/askai/sort-best`
-- **Ask AI**: `POST /api/v1/askai`
-- **SSE Subscribe**: `GET /api/v1/askai/subscribe?searchId={searchId}`
-
-Base URL: `https://askai-gateway.rivi.co`
+**8. RTL Layout Not Working**
+- **Problem**: Arabic text displays but layout is still LTR
+- **Solution**: Apply `.environment(\.layoutDirection, RiviAskAIConfiguration.shared.language.layoutDirection)` to your view
+- **Note**: The package views handle this automatically, but your custom views need this modifier
 
 ---
 
@@ -913,15 +1130,8 @@ Base URL: `https://askai-gateway.rivi.co`
 
 For questions, issues, or feature requests:
 
-- **Email**: support@rivi.co
-- **Documentation**: [Package Documentation](link-to-docs)
+- **Email**: mayank@rivi.co
 - **Example App**: Included in package
-
----
-
-## License
-
-[Your License Information]
 
 ---
 
@@ -930,7 +1140,11 @@ For questions, issues, or feature requests:
 ### Version 1.0.0
 - Initial release
 - Support for hotel and flight queries
-- Pre-built UI components
+- Pre-built UI components (6 customizable views)
 - SSE real-time updates
-- Multi-language support
+- Multi-language support (English and Arabic)
+- RTL layout support for Arabic
 - Parameter change detection
+- Environment configuration (staging, production, custom)
+- Global initialization with auth token and language
+- Confirmation dialog component

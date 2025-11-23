@@ -1,0 +1,31 @@
+/* English Localizations */
+
+/* RiviAskAIButton */
+"ask_ai_button_text" = "Ask AI";
+
+/* RiviAskAISheet */
+"ask_ai_sheet_title" = "Ask AI";
+"ask_ai_sheet_placeholder_hotel" = "e.g. 4 star hotels near the airport with free breakfast";
+"ask_ai_sheet_placeholder_flight" = "e.g. Direct flights that reach before 4PM with meals included";
+"ask_ai_sheet_submit_button" = "Improve Results";
+"ask_ai_sheet_tooltip_hotel" = "AI intelligently sorts hotels to prioritize your preferences - without filtering results.";
+"ask_ai_sheet_tooltip_flight" = "AI intelligently sorts flights to prioritize your preferences - without filtering results.";
+
+/* RiviInfoBanner */
+"info_banner_title" = "AI-sorted results";
+"info_banner_description" = "Results are intelligently sorted based on your preferences";
+
+/* RiviAlertDialog */
+"alert_dialog_title" = "Parameter Change Detected";
+"alert_dialog_description" = "Your prompt includes changes to trip details. To update trip details, use the search fields above.";
+"alert_dialog_button" = "Got it";
+
+/* Parameter Change Warning */
+"parameter_change_warning_title" = "Your prompt includes changes to trip details";
+"parameter_change_warning_description" = "To update trip details, use the search fields above.";
+
+/* RiviConfirmationDialog */
+"clear_query_dialog_title" = "Clear Ask AI Query";
+"clear_query_dialog_description" = "Your active query will be cleared in order to change the sorting. Do you wish to proceed?";
+"clear_query_dialog_cancel" = "Back";
+"clear_query_dialog_confirm" = "Proceed";

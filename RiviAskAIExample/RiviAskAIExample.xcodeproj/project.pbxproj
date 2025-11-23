@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		776B3AA52DEF3CF8002F0F30 /* RiviAskAI in Frameworks */ = {isa = PBXBuildFile; productRef = 776B3AA42DEF3CF8002F0F30 /* RiviAskAI */; };
+		77A6FA4A2ED2E64100043014 /* RiviAskAI in Frameworks */ = {isa = PBXBuildFile; productRef = 77A6FA492ED2E64100043014 /* RiviAskAI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				77A6FA4A2ED2E64100043014 /* RiviAskAI in Frameworks */,
 				776B3AA52DEF3CF8002F0F30 /* RiviAskAI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -84,6 +86,7 @@
 			name = RiviAskAIExample;
 			packageProductDependencies = (
 				776B3AA42DEF3CF8002F0F30 /* RiviAskAI */,
+				77A6FA492ED2E64100043014 /* RiviAskAI */,
 			);
 			productName = RiviAskAIExample;
 			productReference = 776B3A952DEF3CE6002F0F30 /* RiviAskAIExample.app */;
@@ -114,7 +117,7 @@
 			mainGroup = 776B3A8C2DEF3CE6002F0F30;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				776B3AA32DEF3CF8002F0F30 /* XCLocalSwiftPackageReference "../../RiviAskAI" */,
+				77A6FA482ED2E64100043014 /* XCLocalSwiftPackageReference "../../RiviAskAI_Github" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 776B3A962DEF3CE6002F0F30 /* Products */;
@@ -350,14 +353,18 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		776B3AA32DEF3CF8002F0F30 /* XCLocalSwiftPackageReference "../../RiviAskAI" */ = {
+		77A6FA482ED2E64100043014 /* XCLocalSwiftPackageReference "../../RiviAskAI_Github" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../RiviAskAI;
+			relativePath = ../../RiviAskAI_Github;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		776B3AA42DEF3CF8002F0F30 /* RiviAskAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RiviAskAI;
+		};
+		77A6FA492ED2E64100043014 /* RiviAskAI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RiviAskAI;
 		};

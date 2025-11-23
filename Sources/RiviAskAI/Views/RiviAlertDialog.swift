@@ -43,14 +43,16 @@ public struct RiviAlertDialog: View {
         public var buttonBackgroundColor: Color
         /// Button text color
         public var buttonTextColor: Color
+        /// Overlay background color
+        public var overlayBackgroundColor: Color
         
         /// Create a default configuration
         public static var `default`: Configuration {
             Configuration(
                 iconName: "exclamationmark.triangle.fill",
-                titleText: "Your prompt includes changes to the trip details!",
-                descriptionText: "To update trip details, use the search fields above.",
-                buttonText: "Got it!",
+                titleText: "alert_dialog_title".localized(),
+                descriptionText: "alert_dialog_description".localized(),
+                buttonText: "alert_dialog_button".localized(),
                 titleFont: .system(size: 16, weight: .medium),
                 descriptionFont: .system(size: 13, weight: .regular),
                 buttonFont: .system(size: 14, weight: .medium),
@@ -63,7 +65,8 @@ public struct RiviAlertDialog: View {
                 titleColor: Color(light: "#1B1A20", dark: "#1B1A20"),
                 descriptionColor: Color(light: "#62636F", dark: "#62636F"),
                 buttonBackgroundColor: Color(light: "#7B3AEC", dark: "#7B3AEC"),
-                buttonTextColor: Color(light: "#FFFFFF", dark: "#FFFFFF")
+                buttonTextColor: Color(light: "#FFFFFF", dark: "#FFFFFF"),
+                overlayBackgroundColor: Color.black.opacity(0.4)
             )
         }
         
@@ -84,7 +87,8 @@ public struct RiviAlertDialog: View {
             titleColor: Color,
             descriptionColor: Color,
             buttonBackgroundColor: Color,
-            buttonTextColor: Color
+            buttonTextColor: Color,
+            overlayBackgroundColor: Color
         ) {
             self.iconName = iconName
             self.titleText = titleText
@@ -103,6 +107,7 @@ public struct RiviAlertDialog: View {
             self.descriptionColor = descriptionColor
             self.buttonBackgroundColor = buttonBackgroundColor
             self.buttonTextColor = buttonTextColor
+            self.overlayBackgroundColor = overlayBackgroundColor
         }
     }
     
@@ -135,7 +140,7 @@ public struct RiviAlertDialog: View {
     public var body: some View {
         ZStack {
             // Semi-transparent background
-            Color.black.opacity(0.4)
+            configuration.overlayBackgroundColor
                 .ignoresSafeArea()
                 .onTapGesture {
                     dismiss()
@@ -185,6 +190,7 @@ public struct RiviAlertDialog: View {
             .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
             .padding(.horizontal, 32)
         }
+        .environment(\.layoutDirection, RiviAskAIConfiguration.shared.language.layoutDirection)
     }
     
     // MARK: - Methods
