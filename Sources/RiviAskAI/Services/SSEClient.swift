@@ -8,6 +8,7 @@ public class SSEClient {
     private var eventHandler: ((String) -> Void)?
     private var errorHandler: ((Error) -> Void)?
     private var buffer = ""
+    private var dataBuffer = Data()
     
     /// Start an SSE connection to the specified URL
     /// - Parameters:
@@ -54,12 +55,18 @@ public class SSEClient {
     /// Process received data from the SSE connection
     /// - Parameter data: The data received
     func processData(_ data: Data) {
-        guard let dataString = String(data: data, encoding: .utf8) else {
-            Logger.logError(message: "Received non-UTF8 data")
+        // Append raw data to buffer first to handle partial UTF-8 sequences
+        dataBuffer.append(data)
+        
+        // Try to convert accumulated data to string
+        guard let bufferString = String(data: dataBuffer, encoding: .utf8) else {
+            // Data might contain incomplete UTF-8 sequence, wait for more data
             return
         }
         
-        buffer += dataString
+        // Successfully converted, clear data buffer and work with string
+        dataBuffer.removeAll()
+        buffer += bufferString
         
         // Process any complete events in the buffer
         while let eventEndIndex = buffer.range(of: "\n\n") {
@@ -105,6 +112,7 @@ public class SSEClient {
             urlSession?.invalidateAndCancel()
             isConnected = false
             buffer = ""
+            dataBuffer.removeAll()
         }
     }
     
