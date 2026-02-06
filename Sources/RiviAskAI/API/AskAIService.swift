@@ -21,6 +21,8 @@ public protocol AskAIServiceProtocol {
     ///   - onError: Callback for connection errors
     func subscribeToEvents(
         searchId: String,
+        config: SSEConfig,
+        onState: ((SSEConnectionState) -> Void)?,
         onEvent: @escaping (String) -> Void,
         onError: @escaping (Error) -> Void
     )
@@ -322,6 +324,8 @@ public class AskAIService: AskAIServiceProtocol {
     ///   - onError: Callback for connection errors
     public func subscribeToEvents(
         searchId: String,
+        config: SSEConfig = .default,
+        onState: ((SSEConnectionState) -> Void)? = nil,
         onEvent: @escaping (String) -> Void,
         onError: @escaping (Error) -> Void
     ) {
@@ -343,7 +347,9 @@ public class AskAIService: AskAIServiceProtocol {
         
         Logger.logRequest(url: url, params: ["searchId": searchId, "event": "connect"])
         
-        sseClient?.connect(to: url, request: request, onEvent: { eventData in
+        sseClient?.connect(to: url, config: config , request: request, onStateChange: { state in
+            onState?(state)
+        }, onEvent: { eventData in
             Logger.logResponse(
                 url: url,
                 statusCode: 200,

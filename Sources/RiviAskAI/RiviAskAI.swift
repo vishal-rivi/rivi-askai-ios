@@ -111,11 +111,15 @@ public class RiviAskAI {
     ///   - onError: Callback for connection errors
     public static func subscribeToEvents(
         searchId: String,
+        config: SSEConfig = .default,
+        onState: ((SSEConnectionState) -> Void)? = nil,
         onEvent: @escaping (String) -> Void,
         onError: @escaping (Error) -> Void
     ) {
         apiService.subscribeToEvents(
             searchId: searchId,
+            config: config,
+            onState: onState,
             onEvent: onEvent,
             onError: onError
         )
