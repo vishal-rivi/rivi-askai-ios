@@ -34,8 +34,9 @@ public protocol AskAIServiceProtocol {
 /// Implementation of the AskAI API service
 public class AskAIService: AskAIServiceProtocol {
     private var sseClient: SSEClient?
-    
-    public init() {
+    private let logger: AskAILogger
+    public init(logger: AskAILogger? = nil) {
+        self.logger = logger ?? RiviAskAIConfiguration.shared.resolvedLogger
         self.sseClient = SSEClient()
     }
     
@@ -53,6 +54,7 @@ public class AskAIService: AskAIServiceProtocol {
                 userInfo: [NSLocalizedDescriptionKey: "Invalid URL"]
             )
             Logger.logError(message: "Invalid URL: \(urlString)")
+            logger.error("Invalid URL: \(urlString)")
             throw error
         }
         
@@ -85,13 +87,14 @@ public class AskAIService: AskAIServiceProtocol {
             requestBody["checkout"] = checkout.toAPIDateString()
         }
         
-        // Log the request
+        logger.info("Sending sort-best request with searchId: \(request.searchId)")
         Logger.logRequest(url: url, params: requestBody)
         
         do {
             urlRequest.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         } catch {
             Logger.logError(message: "Failed to serialize request body", error: error)
+            logger.error(error)
             throw error
         }
         
@@ -107,6 +110,7 @@ public class AskAIService: AskAIServiceProtocol {
                     userInfo: [NSLocalizedDescriptionKey: "Invalid response"]
                 )
                 Logger.logError(message: "Invalid response", error: error)
+                logger.error(error)
                 throw error
             }
             
@@ -120,6 +124,7 @@ public class AskAIService: AskAIServiceProtocol {
                     code: httpResponse.statusCode,
                     userInfo: [NSLocalizedDescriptionKey: "HTTP error \(httpResponse.statusCode)"]
                 )
+                logger.error(error)
                 throw error
             }
             
@@ -161,6 +166,7 @@ public class AskAIService: AskAIServiceProtocol {
                 } else {
                     // No entities found
                     Logger.logError(message: "No entities found in response")
+                    logger.warn("No entities found in response")
                     return AskAIResponse(
                         chips: [],
                         parameterChangeNotice: nil,
@@ -170,10 +176,12 @@ public class AskAIService: AskAIServiceProtocol {
                 }
             } catch {
                 Logger.logError(message: "Failed to parse response", error: error)
+                logger.error(error)
                 throw error
             }
         } catch {
             Logger.logError(message: "Sort-best request failed", error: error)
+            logger.error(error)
             throw error
         }
     }
@@ -192,6 +200,7 @@ public class AskAIService: AskAIServiceProtocol {
                 userInfo: [NSLocalizedDescriptionKey: "Invalid URL"]
             )
             Logger.logError(message: "Invalid URL: \(urlString)")
+            logger.error("Invalid URL: \(urlString)")
             throw error
         }
         
@@ -224,13 +233,14 @@ public class AskAIService: AskAIServiceProtocol {
             requestBody["checkout"] = checkout.toAPIDateString()
         }
         
-        // Log the request
+        logger.info("Sending AskAI request with searchId: \(request.searchId)")
         Logger.logRequest(url: url, params: requestBody)
         
         do {
             urlRequest.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         } catch {
             Logger.logError(message: "Failed to serialize request body", error: error)
+            logger.error(error)
             throw error
         }
         
@@ -246,6 +256,7 @@ public class AskAIService: AskAIServiceProtocol {
                     userInfo: [NSLocalizedDescriptionKey: "Invalid response"]
                 )
                 Logger.logError(message: "Invalid response", error: error)
+                logger.error(error)
                 throw error
             }
             
@@ -259,6 +270,7 @@ public class AskAIService: AskAIServiceProtocol {
                     code: httpResponse.statusCode,
                     userInfo: [NSLocalizedDescriptionKey: "HTTP error \(httpResponse.statusCode)"]
                 )
+                logger.error(error)
                 throw error
             }
             
@@ -300,6 +312,7 @@ public class AskAIService: AskAIServiceProtocol {
                 } else {
                     // No entities found
                     Logger.logError(message: "No entities found in response")
+                    logger.warn("No entities found in response")
                     return AskAIResponse(
                         chips: [],
                         parameterChangeNotice: nil,
@@ -309,10 +322,12 @@ public class AskAIService: AskAIServiceProtocol {
                 }
             } catch {
                 Logger.logError(message: "Failed to parse response", error: error)
+                logger.error(error)
                 throw error
             }
         } catch {
             Logger.logError(message: "AskAI request failed", error: error)
+            logger.error(error)
             throw error
         }
     }
@@ -338,11 +353,12 @@ public class AskAIService: AskAIServiceProtocol {
                 userInfo: [NSLocalizedDescriptionKey: "Invalid URL"]
             )
             Logger.logError(message: "Invalid SSE URL: \(urlString)")
+            logger.error("Invalid SSE URL: \(urlString)")
             onError(error)
             return
         }
-        
-        // Create a request
+
+        logger.info("Subscribing to events for searchId: \(searchId)")
         let request = URLRequest(url: url)
         
         Logger.logRequest(url: url, params: ["searchId": searchId, "event": "connect"])
@@ -358,12 +374,14 @@ public class AskAIService: AskAIServiceProtocol {
             onEvent(eventData)
         }, onError: { error in
             Logger.logError(message: "SSE connection error", error: error)
+            self.logger.error(error)
             onError(error)
         })
     }
     
     /// Disconnect from the SSE connection
     public func disconnect() {
+        logger.debug("Disconnecting SSE client")
         Logger.logRequest(url: URL(string: "\(RiviAskAIConfiguration.shared.baseURL)/disconnect")!, params: ["message": "Disconnecting SSE client"])
         sseClient?.disconnect()
     }

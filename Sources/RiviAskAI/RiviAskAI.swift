@@ -24,21 +24,32 @@ public enum RiviAskAIEnvironment {
 public class RiviAskAIConfiguration {
     /// Shared instance
     public static let shared = RiviAskAIConfiguration()
-    
+
     /// Current environment
     public var environment: RiviAskAIEnvironment = .staging
-    
+
     /// Base URL for API requests (derived from environment)
     public var baseURL: String {
-        return environment.baseURL
+        environment.baseURL
     }
-    
+
     /// Authorization token for API requests
     public var authToken: String?
-    
+
     /// Default language for API requests
     public var language: Language = .english
-    
+
+    /// Minimum log level for SDK logs (e.g. request/response flow). Default: `.info`.
+    public var logLevel: AskAILogLevel = .info
+
+    /// Custom logger for SDK logs. If `nil`, a default console logger is used with `logLevel`.
+    public var logger: AskAILogger?
+
+    /// Resolved logger used internally: custom logger if set, otherwise `ConsoleAskAILogger(logLevel: logLevel)`.
+    internal var resolvedLogger: AskAILogger {
+        logger ?? ConsoleAskAILogger(logLevel: logLevel)
+    }
+
     private init() {}
 }
 
@@ -52,15 +63,21 @@ public class RiviAskAI {
     ///   - environment: The environment to use (.staging, .production, or .custom)
     ///   - authToken: The authorization token for API requests
     ///   - language: The default language for API requests
+    ///   - logLevel: Minimum level for SDK logs (default: `.info`)
+    ///   - logger: Optional custom logger; if `nil`, a default console logger is used
     public static func initialize(
         environment: RiviAskAIEnvironment,
         authToken: String,
-        language: Language
+        language: Language,
+        logLevel: AskAILogLevel = .info,
+        logger: AskAILogger? = nil
     ) {
         RiviAskAIConfiguration.shared.environment = environment
         RiviAskAIConfiguration.shared.authToken = authToken
         RiviAskAIConfiguration.shared.language = language
-        
+        RiviAskAIConfiguration.shared.logLevel = logLevel
+        RiviAskAIConfiguration.shared.logger = logger
+
         // Reinitialize the API service with new configuration
         apiService = AskAIService()
     }
