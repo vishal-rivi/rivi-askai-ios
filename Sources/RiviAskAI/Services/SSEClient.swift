@@ -4,10 +4,34 @@ import Foundation
 public class SSEClient {
     private var urlSession: URLSession?
     private var task: URLSessionDataTask?
+    
+    // State Tracking
     private var isConnected = false
+    private var currentUrl: URL? // Required for reconnection
+    
+    // Callbacks
     private var eventHandler: ((String) -> Void)?
     private var errorHandler: ((Error) -> Void)?
+    private var onStateChange: ((SSEConnectionState) -> Void)?
+    
+    // Parsing Buffer
     private var buffer = ""
+    
+    // Configuration & Retry State
+    private var currentConfig: SSEConfig = .default
+    private var currentRetryAttempt = 0
+    
+    // MARK: - Init
+    public init() {}
+    
+    // MARK: - Helper: State Update
+    private func updateState(_ newState: SSEConnectionState) {
+        DispatchQueue.main.async { [weak self] in
+            self?.onStateChange?(newState)
+        }
+    }
+    
+    // MARK: - Public API
     
     /// Start an SSE connection to the specified URL
     /// - Parameters:
@@ -17,32 +41,56 @@ public class SSEClient {
     ///   - onError: Callback for connection errors
     public func connect(
         to url: URL,
+        config: SSEConfig = .default,
         request: URLRequest? = nil,
+        onStateChange: @escaping (SSEConnectionState) -> Void,
         onEvent: @escaping (String) -> Void,
         onError: @escaping (Error) -> Void
     ) {
-        disconnect()
-        
+        // Save Configuration & Callbacks
+        self.currentConfig = config
+        self.currentUrl = url
+        self.onStateChange = onStateChange
         self.eventHandler = onEvent
         self.errorHandler = onError
         
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = TimeInterval(Double.infinity)
-        config.timeoutIntervalForResource = TimeInterval(Double.infinity)
+        // Reset counters
+        self.currentRetryAttempt = 0
+        
+        // Start
+        startConnection(url: url, customRequest: request)
+    }
+    
+    /// Internal method to start/restart connection
+    private func startConnection(url: URL, customRequest: URLRequest? = nil) {
+    
+        disconnect(notify: false)
+        
+        updateState(.connecting)
+        
+        // Setup Session Config
+        let sessionConfig = URLSessionConfiguration.default
+        sessionConfig.timeoutIntervalForRequest = currentConfig.connectTimeout
+        sessionConfig.timeoutIntervalForResource = TimeInterval(Double.infinity)
         
         let delegate = SSESessionDelegate(client: self)
-        self.urlSession = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
+        self.urlSession = URLSession(configuration: sessionConfig, delegate: delegate, delegateQueue: nil)
         
+        // Setup Request
         var finalRequest: URLRequest
-        if let customRequest = request {
-            finalRequest = customRequest
-            finalRequest.timeoutInterval = TimeInterval(Double.infinity)
-            if finalRequest.value(forHTTPHeaderField: "Accept") == nil {
-                finalRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        if let r = customRequest {
+            finalRequest = r
+            // If the user didn't set a custom timeout, use the config
+            if finalRequest.timeoutInterval == 60.0 {
+                finalRequest.timeoutInterval = TimeInterval(Double.infinity)
             }
         } else {
             finalRequest = URLRequest(url: url)
             finalRequest.timeoutInterval = TimeInterval(Double.infinity)
+        }
+        
+        // Ensure Headers
+        if finalRequest.value(forHTTPHeaderField: "Accept") == nil {
             finalRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         }
         
@@ -51,32 +99,36 @@ public class SSEClient {
         isConnected = true
     }
     
-    /// Process received data from the SSE connection
-    /// - Parameter data: The data received
+    // MARK: - Data Processing
+    
     func processData(_ data: Data) {
+        // If this is the first data received, we are officially connected
+        if isConnected {
+             if currentRetryAttempt > 0 || isReconnectingState() {
+                 currentRetryAttempt = 0
+                 updateState(.connected)
+             } else {
+                 updateState(.connected)
+             }
+        }
+        
         guard let dataString = String(data: data, encoding: .utf8) else {
-            Logger.logError(message: "Received non-UTF8 data")
+            print("Error: Received non-UTF8 data")
             return
         }
         
         buffer += dataString
         
-        // Process any complete events in the buffer
         while let eventEndIndex = buffer.range(of: "\n\n") {
             let eventString = String(buffer[..<eventEndIndex.lowerBound])
             buffer = String(buffer[eventEndIndex.upperBound...])
             
             if !eventString.isEmpty {
-                // Extract the JSON data from the event string
-                // SSE format typically has "data: " prefix followed by the actual data
                 var jsonString = eventString
-                
-                // If the event starts with "data: ", remove that prefix
                 if let dataPrefix = jsonString.range(of: "data: ") {
                     jsonString = String(jsonString[dataPrefix.upperBound...])
                 }
                 
-                // Handle multi-line data fields (each line starting with "data: ")
                 if jsonString.contains("\ndata: ") {
                     jsonString = jsonString.components(separatedBy: "\ndata: ")
                         .joined(separator: "")
@@ -89,31 +141,86 @@ public class SSEClient {
         }
     }
     
-    /// Handle errors from the SSE connection
-    /// - Parameter error: The error that occurred
+    private func isReconnectingState() -> Bool {
+        // Simple helper to check if we were previously retrying
+        return currentRetryAttempt > 0
+    }
+    
+    // MARK: - Error Handling & Retry Logic
+    
     func handleError(_ error: Error) {
-        Logger.logError(message: "SSE connection error", error: error)
+        print("SSE connection error: \(error.localizedDescription)")
+        
+        // Notify the generic error handler
         DispatchQueue.main.async { [weak self] in
             self?.errorHandler?(error)
         }
+        
+        // Determine Reason
+        let reason: DisconnectReason
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .timedOut: reason = .timeout
+            case .cancelled: reason = .cancelled
+            case .notConnectedToInternet, .networkConnectionLost:
+                reason = .networkError(message: urlError.localizedDescription)
+            default: reason = .unknown(cause: error)
+            }
+        } else {
+            reason = .unknown(cause: error)
+        }
+        
+        // Check Retry Policy
+        if reason.isRecoverable && currentRetryAttempt < currentConfig.maxReconnectAttempts {
+            attemptReconnect()
+        } else {
+            updateState(.disconnected(reason: reason))
+        }
     }
     
-    /// Disconnect from the current SSE connection
-    public func disconnect() {
-        if isConnected {
+    private func attemptReconnect() {
+        currentRetryAttempt += 1
+        
+        // Exponential Backoff: initial * (multiplier ^ (attempt - 1))
+        let exponent = Double(currentRetryAttempt - 1)
+        let backoff = currentConfig.initialReconnectDelay * pow(currentConfig.reconnectBackoffMultiplier, exponent)
+        let delay = min(backoff, currentConfig.maxReconnectDelay)
+        
+        // Notify UI
+        updateState(.reconnecting(
+            attempt: currentRetryAttempt,
+            maxAttempts: currentConfig.maxReconnectAttempts,
+            nextRetryIn: delay
+        ))
+        
+        // Schedule Retry
+        DispatchQueue.global().asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self = self, let url = self.currentUrl else { return }
+            self.startConnection(url: url)
+        }
+    }
+    
+    // MARK: - Disconnect
+    
+    public func disconnect(notify: Bool = true) {
+        if isConnected || task != nil {
             task?.cancel()
             urlSession?.invalidateAndCancel()
             isConnected = false
             buffer = ""
+            
+            if notify {
+                updateState(.disconnected(reason: .cancelled))
+            }
         }
     }
     
     deinit {
-        disconnect()
+        disconnect(notify: false)
     }
 }
 
-/// URLSession delegate for handling SSE connection events
+// MARK: - Session Delegate
 private class SSESessionDelegate: NSObject, URLSessionDataDelegate {
     private weak var client: SSEClient?
     

@@ -23,6 +23,15 @@ public struct AskAIRequest {
     /// Check-out date
     public let checkout: Date?
     
+     /// Adults
+    public let adults: Int?
+    
+    // Children
+   public let children: Int?
+    
+    // Child ages
+    public let childAges: [Int]?
+    
     /// Destination location
     public let destination: String
     
@@ -48,6 +57,9 @@ public struct AskAIRequest {
         currency: String,
         checkin: Date? = nil,
         checkout: Date? = nil,
+        adults: Int? = nil,
+        children: Int? = nil,
+        childAges: [Int]? = nil,
         destination: String,
         origin: String
     ) {
@@ -58,6 +70,9 @@ public struct AskAIRequest {
         self.currency = currency
         self.checkin = checkin
         self.checkout = checkout
+        self.adults = adults
+        self.children = children
+        self.childAges = childAges
         self.destination = destination
         self.origin = origin
     }
