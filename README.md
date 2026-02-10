@@ -1,39 +1,40 @@
 # RiviAskAI Package Documentation
 
 ## Overview
+![Swift](https://img.shields.io/badge/Swift-5.9+-orange.svg)
+![iOS](https://img.shields.io/badge/iOS-16.0+-blue.svg)
+![macOS](https://img.shields.io/badge/macOS-12.0+-blue.svg)
+![SPM](https://img.shields.io/badge/SPM-compatible-green.svg)
 
-**RiviAskAI** is a Swift package that provides AI-powered sorting and filtering capabilities for flight and hotel search results in iOS applications. The package enables travel booking apps to offer intelligent, natural language-based search refinement to their users.
+RiviAskAI is a Swift package that provides AI-powered sorting and filtering capabilities for flight and hotel search results in iOS applications. The package enables travel booking apps to offer intelligent, natural language-based search refinement to their users.
 
-### Key Features
+## Key Features
 
-- **AI-Powered Sorting**: Automatically sort search results based on user preferences
-- **Natural Language Queries**: Process user queries like "4 star hotels near airport with free breakfast" or "Direct flights that reach before 4PM"
-- **Real-time Updates**: Subscribe to Server-Sent Events (SSE) for live sorted results
-- **Pre-built UI Components**: Ready-to-use, fully customizable SwiftUI views
-- **Custom UI Support**: Use package logic with your own UI implementation
-- **Dual Query Types**: Support for both hotel and flight searches
-- **Parameter Change Detection**: Warns users when queries attempt to modify trip details
-
----
+* AI-Powered Sorting: Automatically sort search results based on user preferences
+* Natural Language Queries: Process user queries like "4 star hotels near airport with free breakfast" or "Direct flights that reach before 4PM"
+* Real-time Updates: Subscribe to server-sent events (SSE) with built-in auto-reconnection, exponential backoff, and configurable timeouts.
+* Granular State Management: Receive detailed connection states (Connecting, Reconnecting, Disconnected) to build responsive UIs.
+* Pre-built UI Components: Ready-to-use, fully customizable SwiftUI views
+* Custom UI Support: Use package logic with your own UI implementation
+* Dual Query Types: Support for both hotel and flight searches
+* Parameter Change Detection: Warns users when queries attempt to modify trip details
 
 ## Installation
 
-### Swift Package Manager
+### Swift Package Manager (SPM)
 
 Add RiviAskAI to your project using Swift Package Manager:
 
-1. In Xcode, select **File > Add Packages...**
-2. Enter the package repository URL:
+1. In Xcode, select File > Add Packages...
+2. Enter the package repository URL: "https://gitlab.com/riviai/ios/rivi_ask_ai.git"
 3. Select the latest version
-4. Click **Add Package**
+4. Click Add Package
 
-### Requirements
+## Requirements
 
-- iOS 16.0+ / macOS 12.0+
-- Swift 5.9+
-- Xcode 14.0+
-
----
+* iOS 16.0+ / macOS 12.0+
+* Swift 5.9+
+* Xcode 14.0+
 
 ## Getting Started
 
@@ -41,9 +42,9 @@ Add RiviAskAI to your project using Swift Package Manager:
 
 Before using RiviAskAI, you need:
 
-1. **Search ID**: Obtained from your initial search API call
-2. **Authorization Token**: Your API authentication token
-3. **Trip Details**: Origin, destination, dates (for hotels), and other search parameters
+1. Search ID: Obtained from your initial search API call
+2. Authorization Token: Your API authentication token
+3. Trip Details: Origin, destination, dates (for hotels), and other search parameters
 
 ### Initialization
 
@@ -73,14 +74,16 @@ struct YourApp: App {
 ```
 
 **Parameters:**
-- `environment`: `.staging`, `.production`, or `.custom(baseURL: "...")`
-- `authToken`: Your authorization token (required)
-- `language`: `.english` or `.arabic`
+
+* environment: .staging, .production, or .custom(baseURL: "...")
+* authToken: Your authorization token (required)
+* language: .english or .arabic
 
 **Environments:**
-- `.staging`: Uses `https://askai-gateway-staging.rivi.co/api/v1`
-- `.production`: Uses `https://askai-gateway.rivi.co/api/v1`
-- `.custom(baseURL:)`: Uses your custom base URL
+
+* .staging: Uses https://askai-gateway-staging.rivi.co/api/v1
+* .production: Uses https://askai-gateway.rivi.co/api/v1
+* .custom(baseURL:): Uses your custom base URL
 
 After initialization, the auth token and language are used globally for all API calls.
 
@@ -106,7 +109,6 @@ struct ContentView: View {
                     handleChipRemoval(removedChip)
                 }
             }
-            
             // Ask AI button
             RiviAskAIButton(isEnabled: $isButtonEnabled) {
                 showAskAISheet = true
@@ -125,8 +127,6 @@ struct ContentView: View {
 }
 ```
 
----
-
 ## Core API Reference
 
 ### RiviAskAI Class
@@ -134,35 +134,39 @@ struct ContentView: View {
 The main entry point for all package functionality.
 
 **Recommended Flow:**
+
 1. Get searchId from your search API
 2. Subscribe to SSE events (to receive sorted results)
 3. Call Sort Best API (for automatic sorting)
 4. Call Ask AI API (when user enters a query)
 
-#### 1. Subscribe to Events (SSE)
+---
 
-Subscribe to real-time sorted results via Server-Sent Events. **Call this immediately after receiving your search ID** to start receiving sorted results.
+### 1. Subscribe to Events (SSE)
 
-
-
-
+Subscribe to real-time sorted results via Server-Sent Events. Call this immediately after receiving your search ID to start receiving sorted results.
 
 ```swift
 public static func subscribeToEvents(
     searchId: String,
+    config: SSEConfig = .default,
+    onState: ((SSEConnectionState) -> Void)? = nil,
     onEvent: @escaping (String) -> Void,
     onError: @escaping (Error) -> Void
 )
 ```
 
 **Parameters:**
-- `searchId`: The search identifier from your initial search
-- `onEvent`: Callback receiving JSON event data as string
-- `onError`: Callback for connection errors
 
-**Returns:** Nothing (void). Results are delivered via the `onEvent` callback.
+* searchId: Your application's search identifier.
+* config: (Optional) Connection configuration. Defaults to .default. You can also use .aggressive or .conservative.
+* onState: (Optional) Callback for connection lifecycle changes (e.g., to show a "Reconnecting..." banner).
+* onEvent: Callback for received data events.
+* onError: Callback for unrecoverable errors.
 
-**Note:** Auth token is automatically used from global configuration set during initialization.
+**Returns:** Nothing (void). Results are delivered via the onEvent callback.
+
+**Note:** Auth token is automatically used from the global configuration set during initialization.
 
 **Example:**
 
@@ -171,9 +175,12 @@ public static func subscribeToEvents(
 let searchResponse = try await yourSearchAPI.search(...)
 let searchId = searchResponse.searchId
 
-// Step 2: Subscribe to SSE immediately
 RiviAskAI.subscribeToEvents(
     searchId: searchId,
+    config: .aggressive,
+    onState: { state in
+        print("State is \(state)")
+    },
     onEvent: { jsonData in
         // Parse and display sorted results
         print("Received sorted results: \(jsonData)")
@@ -188,23 +195,22 @@ RiviAskAI.subscribeToEvents(
     },
     onError: { error in
         print("SSE Error: \(error)")
-        // Handle connection errors
     }
 )
-
-// Step 3: Now call Sort Best or Ask AI APIs
-// The sorted results will be delivered via the onEvent callback above
 ```
 
 **Important Notes:**
-- Subscribe to SSE **before** calling Sort Best or Ask AI APIs
-- The SSE connection will deliver sorted results whenever you call Sort Best or Ask AI
-- Keep the connection active while displaying results
-- Call `disconnect()` when leaving the results screen
 
-#### 2. Sort Best API (Initial Sorting)
+* Subscribe to SSE before calling Sort Best or Ask AI APIs
+* The SSE connection will deliver sorted results whenever you call Sort Best or Ask AI
+* Keep the connection active while displaying results
+* Call disconnect() when leaving the results screen
 
-Automatically sorts search results without a user query. **Call this after subscribing to SSE** to get initial sorted results.
+---
+
+### 2. Sort Best API (Initial Sorting)
+
+Automatically sorts search results without a user query. Call this after subscribing to SSE to get initial sorted results.
 
 ```swift
 public static func performSortBestRequest(
@@ -220,20 +226,21 @@ public static func performSortBestRequest(
 ```
 
 **Parameters:**
-- `searchId`: The search identifier from your initial search
-- `isRound`: Whether this is a round trip flight (default: false)
-- `queryType`: `.hotel` or `.flight`
-- `currency`: Currency code (e.g., "SAR", "AED", "USD", "INR")
-- `checkin`: Check-in date (required for hotels)
-- `checkout`: Check-out date (required for hotels)
-- `destination`: Destination location
-- `origin`: Origin location
 
-**Returns:** `AskAIResponse` containing:
-- `chips`: Set of filter chips to display
-- `parameterChangeNotice`: Warning message if applicable
-- `rawResponse`: Complete API response
-- `entity`: First entity from response for custom processing
+* searchId: The search identifier from your initial search
+* isRound: Whether this is a round trip flight (default: false)
+* queryType: .hotel or .flight
+* currency: Currency code (e.g., "SAR", "AED", "USD", "INR")
+* checkin: Check-in date (required for hotels)
+* checkout: Check-out date (required for hotels)
+* destination: Destination location
+* origin: Origin location
+
+**Returns:** AskAIResponse containing:
+* chips: Set of filter chips to display
+* parameterChangeNotice: Warning message if applicable
+* rawResponse: Complete API response
+* entity: First entity from response for custom processing
 
 **Example:**
 
@@ -261,9 +268,11 @@ Task {
 }
 ```
 
-#### 3. Ask AI API (User Query)
+---
 
-Process a natural language query from the user to refine sorting. **Call this when user enters a query** to get refined sorted results.
+### 3. Ask AI API (User Query)
+
+Process a natural language query from the user to refine sorting. Call this when user enters a query to get refined sorted results.
 
 ```swift
 public static func performAskAIRequest(
@@ -280,7 +289,7 @@ public static func performAskAIRequest(
 ```
 
 **Parameters:** Same as Sort Best API, plus:
-- `query`: User's natural language query (e.g., "4 star hotels near airport")
+* query: User's natural language query (e.g., "4 star hotels near airport")
 
 **Example:**
 
@@ -314,7 +323,9 @@ Task {
 }
 ```
 
-#### 4. Disconnect
+---
+
+### 4. Disconnect
 
 Disconnect from active SSE connection.
 
@@ -336,7 +347,9 @@ override func viewWillDisappear(_ animated: Bool) {
 
 ## UI Components
 
-RiviAskAI provides six customizable SwiftUI views. Each view has a `Configuration` struct for complete customization.
+RiviAskAI provides six customizable SwiftUI views. Each view has a Configuration struct for complete customization.
+
+---
 
 ### 1. RiviAskAIButton
 
@@ -368,18 +381,21 @@ RiviAskAIButton(
 ```
 
 **Configuration Options:**
-- `text`: Button text (default: "Ask AI")
-- `font`: Text font
-- `showIcon`: Show/hide sparkle icon
-- `spacing`: Icon-text spacing
-- `cornerRadius`: Button corner radius
-- `padding`: Internal padding
-- `iconSize`: Icon size
-- `backgroundColor`: Button background color
-- `textColor`: Text color
-- `iconColor`: Icon color
-- `disabledBackgroundColor`: Disabled state background
-- `disabledTextColor`: Disabled state text color
+
+* text: Button text (default: "Ask AI")
+* font: Text font
+* showIcon: Show/hide sparkle icon
+* spacing: Icon-text spacing
+* cornerRadius: Button corner radius
+* padding: Internal padding
+* iconSize: Icon size
+* backgroundColor: Button background color
+* textColor: Text color
+* iconColor: Icon color
+* disabledBackgroundColor: Disabled state background
+* disabledTextColor: Disabled state text color
+
+---
 
 ### 2. RiviAskAISheet
 
@@ -431,20 +447,23 @@ RiviAskAISheet(
 ```
 
 **Configuration Options:**
-- `titleText`: Sheet title
-- `placeholderText`: Input placeholder (auto-set based on queryType)
-- `submitButtonText`: Submit button text
-- `infoTooltipText`: Tooltip text (auto-set based on queryType)
-- `titleFont`, `inputFont`, `submitButtonFont`: Font customization
-- `padding`: Internal padding
-- `lineLimit`: Text input line limit
-- `spacing`: Element spacing
-- `headerIconSize`: Header icon size
-- `showHeaderIcon`: Show/hide header icon
-- `headerSpacing`: Header element spacing
-- `showInfoButton`: Show/hide info button
-- `infoButtonSize`: Info button size
-- Color customization for all elements
+
+* titleText: Sheet title
+* placeholderText: Input placeholder (auto-set based on queryType)
+* submitButtonText: Submit button text
+* infoTooltipText: Tooltip text (auto-set based on queryType)
+* titleFont, inputFont, submitButtonFont: Font customization
+* padding: Internal padding
+* lineLimit: Text input line limit
+* spacing: Element spacing
+* headerIconSize: Header icon size
+* showHeaderIcon: Show/hide header icon
+* headerSpacing: Header element spacing
+* showInfoButton: Show/hide info button
+* infoButtonSize: Info button size
+* Color customization for all elements
+
+---
 
 ### 3. RiviChipsView
 
@@ -455,7 +474,6 @@ Displays filter chips with removal capability.
 ```swift
 RiviChipsView(chips: $filterChips) { removedChip in
     print("Removed: \(removedChip)")
-    // Re-process query without this chip
     processUpdatedChips()
 }
 ```
@@ -479,16 +497,19 @@ RiviChipsView(
 ```
 
 **Configuration Options:**
-- `font`: Chip text font
-- `cornerRadius`: Chip corner radius
-- `chipPadding`: Internal chip padding
-- `spacing`: Spacing between chips
-- `removeIconSize`: X icon size
-- `textIconSpacing`: Text-icon spacing
-- `chipBackgroundColor`: Chip background
-- `chipBorderColor`: Chip border
-- `chipTextColor`: Chip text color
-- `removeIconColor`: X icon color
+
+* font: Chip text font
+* cornerRadius: Chip corner radius
+* chipPadding: Internal chip padding
+* spacing: Spacing between chips
+* removeIconSize: X icon size
+* textIconSpacing: Text-icon spacing
+* chipBackgroundColor: Chip background
+* chipBorderColor: Chip border
+* chipTextColor: Chip text color
+* removeIconColor: X icon color
+
+---
 
 ### 4. RiviInfoBanner
 
@@ -515,17 +536,20 @@ RiviInfoBanner(configuration: customConfig)
 ```
 
 **Configuration Options:**
-- `iconName`: Icon asset name
-- `titleText`: Banner title
-- `descriptionText`: Banner description
-- `titleFont`, `descriptionFont`: Font customization
-- `cornerRadius`: Banner corner radius
-- `padding`: Internal padding
-- `iconSpacing`: Icon-text spacing
-- `textSpacing`: Title-description spacing
-- `showIcon`: Show/hide icon
-- `iconSize`: Icon size
-- Color customization for all elements
+
+* iconName: Icon asset name
+* titleText: Banner title
+* descriptionText: Banner description
+* titleFont, descriptionFont: Font customization
+* cornerRadius: Banner corner radius
+* padding: Internal padding
+* iconSpacing: Icon-text spacing
+* textSpacing: Title-description spacing
+* showIcon: Show/hide icon
+* iconSize: Icon size
+* Color customization for all elements
+
+---
 
 ### 5. RiviAlertDialog
 
@@ -559,16 +583,19 @@ RiviAlertDialog(
 ```
 
 **Configuration Options:**
-- `iconName`: Icon asset name
-- `titleText`: Alert title
-- `descriptionText`: Alert description
-- `buttonText`: Button text
-- `titleFont`, `descriptionFont`, `buttonFont`: Font customization
-- `cornerRadius`: Dialog corner radius
-- `padding`: Internal padding
-- `spacing`: Element spacing
-- `iconSize`: Icon size
-- Color customization for all elements
+
+* iconName: Icon asset name
+* titleText: Alert title
+* descriptionText: Alert description
+* buttonText: Button text
+* titleFont, descriptionFont, buttonFont: Font customization
+* cornerRadius: Dialog corner radius
+* padding: Internal padding
+* spacing: Element spacing
+* iconSize: Icon size
+* Color customization for all elements
+
+---
 
 ### 6. RiviConfirmationDialog
 
@@ -620,17 +647,18 @@ RiviConfirmationDialog(
 ```
 
 **Configuration Options:**
-- `titleText`: Dialog title
-- `descriptionText`: Dialog description
-- `cancelButtonText`: Cancel button text
-- `confirmButtonText`: Confirm button text
-- `titleFont`, `descriptionFont`, `buttonFont`: Font customization
-- `cornerRadius`: Dialog corner radius
-- `padding`: Internal padding
-- `spacing`: Element spacing
-- `buttonSpacing`: Spacing between buttons
-- `buttonHeight`: Button height
-- Color customization for all elements (background, buttons, text, borders, overlay)
+
+* titleText: Dialog title
+* descriptionText: Dialog description
+* cancelButtonText: Cancel button text
+* confirmButtonText: Confirm button text
+* titleFont, descriptionFont, buttonFont: Font customization
+* cornerRadius: Dialog corner radius
+* padding: Internal padding
+* spacing: Element spacing
+* buttonSpacing: Spacing between buttons
+* buttonHeight: Button height
+* Color customization for all elements (background, buttons, text, borders, overlay)
 
 ---
 
@@ -740,7 +768,6 @@ let searchResponse = try await yourSearchAPI.search(
     checkin: checkinDate,
     checkout: checkoutDate
 )
-
 let searchId = searchResponse.searchId
 ```
 
@@ -751,15 +778,24 @@ let searchId = searchResponse.searchId
 func subscribeToSortedResults() {
     RiviAskAI.subscribeToEvents(
         searchId: searchId,
+        config: .aggressive,
+        onState: { state in
+            print("State is \(state)")
+        },
         onEvent: { jsonData in
             // Parse and display sorted results
-            DispatchQueue.main.async {
-                self.parseAndDisplayResults(jsonData)
+            print("Received sorted results: \(jsonData)")
+            
+            // Parse JSON and update UI
+            if let data = jsonData.data(using: .utf8),
+               let results = try? JSONDecoder().decode([YourResultModel].self, from: data) {
+                DispatchQueue.main.async {
+                    self.displayResults(results)
+                }
             }
         },
         onError: { error in
             print("SSE Error: \(error)")
-            // Handle connection errors
         }
     )
 }
@@ -865,27 +901,29 @@ deinit {
 
 The package includes a comprehensive example app demonstrating all features:
 
-**Location:** `RiviAskAIExample/RiviAskAIExample/`
+**Location:** RiviAskAIExample/RiviAskAIExample/
 
 ### What's Included
 
 The example app demonstrates:
 
-1. **Package UI Flow**: Using all pre-built views with customization
-2. **Custom UI Flow**: Using package logic with custom views
-3. **SSE Subscription**: Real-time event streaming
-4. **Error Handling**: Parameter change warnings and alerts
-5. **Multi-language**: English and Arabic support
-6. **Both Query Types**: Hotel and Flight examples
+1. Package UI Flow: Using all pre-built views with customization
+2. Custom UI Flow: Using package logic with custom views
+3. SSE Subscription: Real-time event streaming
+4. Error Handling: Parameter change warnings and alerts
+5. Multi-language: English and Arabic support
+6. Both Query Types: Hotel and Flight examples
 
 ### Running the Example
 
-1. Open `RiviAskAIExample.xcodeproj`
-2. Update the constants in `ContentView.swift`:
-   ```swift
-   private let searchId = "YOUR_SEARCH_ID"
-   private let authToken = "YOUR_AUTH_TOKEN"
-   ```
+1. Open RiviAskAIExample.xcodeproj
+2. Update the constants in ContentView.swift:
+
+```swift
+private let searchId = "YOUR_SEARCH_ID"
+private let authToken = "YOUR_AUTH_TOKEN"
+```
+
 3. Run the app and explore different scenarios
 
 The example app covers all possible use cases and edge cases, providing a complete reference implementation.
@@ -898,8 +936,8 @@ RiviAskAI supports English and Arabic localization for all UI components.
 
 ### Supported Languages
 
-- **English** (`.english` or `"en"`)
-- **Arabic** (`.arabic` or `"ar"`)
+* English (.english or "en")
+* Arabic (.arabic or "ar")
 
 ### How It Works
 
@@ -914,12 +952,13 @@ RiviAskAI.initialize(
 ```
 
 All UI components automatically display in the selected language:
-- Button text
-- Sheet titles and placeholders
-- Tooltips
-- Info banners
-- Alert dialogs
-- Confirmation dialogs
+
+* Button text
+* Sheet titles and placeholders
+* Tooltips
+* Info banners
+* Alert dialogs
+* Confirmation dialogs
 
 ### RTL Support
 
@@ -944,11 +983,12 @@ RiviAskAI.initialize(
 ### Localized Components
 
 All package UI components are fully localized:
-- `RiviAskAIButton`
-- `RiviAskAISheet`
-- `RiviInfoBanner`
-- `RiviAlertDialog`
-- `RiviConfirmationDialog`
+
+* RiviAskAIButton
+* RiviAskAISheet
+* RiviInfoBanner
+* RiviAlertDialog
+* RiviConfirmationDialog
 
 ---
 
@@ -965,9 +1005,12 @@ public enum RiviAskAIEnvironment {
 ```
 
 **Values:**
-- `.staging`: Staging environment (`https://askai-gateway-staging.rivi.co/api/v1`)
-- `.production`: Production environment (`https://askai-gateway.rivi.co/api/v1`)
-- `.custom(baseURL:)`: Custom environment with your own base URL
+
+* .staging: Staging environment (https://askai-gateway-staging.rivi.co/api/v1)
+* .production: Production environment (https://askai-gateway.rivi.co/api/v1)
+* .custom(baseURL:): Custom environment with your own base URL
+
+---
 
 ### QueryType
 
@@ -977,6 +1020,8 @@ public enum QueryType: String {
     case flight = "flight"
 }
 ```
+
+---
 
 ### Language
 
@@ -994,6 +1039,8 @@ public enum Language: String {
 }
 ```
 
+---
+
 ### AskAIResponse
 
 ```swift
@@ -1003,6 +1050,143 @@ public struct AskAIResponse {
     public let rawResponse: [String: Any]
     public let entity: [String: Any]?
 }
+```
+
+---
+
+### SSEConfig
+
+Controls timeouts and retry policies for Server-Sent Events streams
+
+```swift
+public struct SSEConfig {
+    public let connectTimeout: TimeInterval
+    public let maxReconnectAttempts: Int
+    public let initialReconnectDelay: TimeInterval
+    public let maxReconnectDelay: TimeInterval
+    public let reconnectBackoffMultiplier: Double
+
+    public static let `default`: SSEConfig
+    public static let aggressive: SSEConfig
+    public static let conservative: SSEConfig
+}
+```
+
+---
+
+## State Management
+
+Monitor the detailed lifecycle of the connection using these types.
+
+### SSEConnectionState
+
+Represents the current state of the connection.
+
+```swift
+public enum SSEConnectionState {
+    case connecting
+    case connected
+    /// The connection was lost and is attempting to reconnect.
+    /// - attempt: The current retry attempt number
+    /// - maxAttempts: The maximum allowed retries
+    /// - nextRetryIn: Seconds remaining until the next retry
+    case reconnecting(attempt: Int, maxAttempts: Int, nextRetryIn: TimeInterval)
+    case disconnected(reason: DisconnectReason)
+}
+```
+
+---
+
+### DisconnectReason
+
+Explains why a connection was terminated.
+
+```swift
+public enum DisconnectReason {
+    case timeout
+    case serverClosed
+    case cancelled
+    case maxRetriesExceeded
+    case networkError(message: String?)
+    case unknown(cause: Error)
+}
+```
+
+---
+
+## Logging
+
+RiviAskAI includes a flexible logging system to help you debug integration issues and monitor SDK activity. It supports configurable log levels, custom logging destinations, and automatic debug-only network logging.
+
+### Log Levels
+
+The AskAILogLevel enum defines the verbosity of the logs. You can filter logs by setting a specific level.
+
+```swift
+public enum AskAILogLevel: Int, Comparable {
+    case all = 0
+    case debug = 1
+    case info = 2
+    case warn = 3
+    case error = 4
+    case none = 5
+}
+```
+
+**Default Implementation:** The SDK comes with ConsoleAskAILogger, which simply prints formatted logs to the Xcode console based on the configured log level.
+
+### Custom Logging
+
+If you use a centralized logging framework (like os_log, CocoaLumberjack, or Crashlytics), you can route AskAI logs to it by implementing the AskAILogger protocol.
+
+```swift
+public protocol AskAILogger {
+    /// Logs a debug message.
+    func debug(_ message: String)
+    /// Logs an informational message.
+    func info(_ message: String)
+    /// Logs a warning message.
+    func warn(_ message: String)
+    /// Logs an error message.
+    func error(_ message: String)
+    /// Logs an error with an Error object.
+    func error(_ error: Error)
+}
+```
+
+### Network Debugging
+
+The Logger utility provides specialized formatting for network requests and responses.
+
+* Automatic Safety: All methods in Logger are wrapped in #if DEBUG, ensuring that verbose network logs (which might contain sensitive query data) are never included in your Release builds.
+* Pretty Printing: JSON responses are automatically formatted with indentation for easier reading in the console.
+
+**Example Console Output:**
+
+```
+================================================================================
+ASK AI REQUEST
+================================================================================
+URL: https://askai-gateway.rivi.co/api/v1/ask-ai
+Params:
+  query: 5 star hotels in Dubai
+  currency: AED
+================================================================================
+
+================================================================================
+ASK AI RESPONSE
+================================================================================
+URL: https://askai-gateway.rivi.co/api/v1/ask-ai
+Status Code: 200
+Response:
+  {
+    "chips" : [
+      "5 Star",
+      "Dubai"
+    ],
+    "status" : "success"
+  }
+================================================================================
 ```
 
 ---
@@ -1082,47 +1266,55 @@ RiviAskAI.initialize(
 
 ### Common Issues
 
-**1. Package Not Initialized**
-- **Problem**: API calls fail or UI components show default English text
-- **Solution**: Ensure `RiviAskAI.initialize()` is called before any API calls or UI components are used
-- **Best Practice**: Call it in your App struct's `init()` method
+#### 1. Package Not Initialized
 
-**2. No Chips Returned**
-- Verify searchId and authToken are correct
-- Ensure query is relevant to the query type (hotel/flight)
-- Check network connectivity
-- Confirm `RiviAskAI.initialize()` was called with valid token
+* Problem: API calls fail or UI components show default English text
+* Solution: Ensure RiviAskAI.initialize() is called before any API calls or UI components are used
+* Best Practice: Call it in your App struct's init() method
 
-**3. SSE Connection Fails**
-- Verify authToken is valid
-- Check network stability
-- Ensure you're not blocking the connection with firewalls
-- Confirm initialization was completed before subscribing
+#### 2. No Chips Returned
 
-**4. UI Not Updating**
-- Ensure state updates are on main thread
-- Check bindings are properly set up
-- Verify @State variables are correctly declared
+* Verify searchId and authToken are correct
+* Ensure query is relevant to the query type (hotel/flight)
+* Check network connectivity
+* Confirm RiviAskAI.initialize() was called with valid token
 
-**5. Parameter Change Warning Not Showing**
-- Check if `parameterChangeNotice` is nil
-- Verify you're displaying the warning in UI
-- Ensure alert/banner is properly configured
+#### 3. SSE Connection Fails
 
-**6. Chips Not Removing**
-- Verify onRemove callback is implemented
-- Check that you're updating the chips Set
-- Ensure you're re-processing the query after removal
+* Verify authToken is valid
+* Check network stability
+* Ensure you're not blocking the connection with firewalls
+* Confirm initialization was completed before subscribing
 
-**7. Wrong Language Displayed**
-- **Problem**: UI components show wrong language
-- **Solution**: Verify you're passing the correct language to `initialize()`
-- **Check**: Use `RiviAskAIConfiguration.shared.language` to verify current language
+#### 4. UI Not Updating
 
-**8. RTL Layout Not Working**
-- **Problem**: Arabic text displays but layout is still LTR
-- **Solution**: Apply `.environment(\.layoutDirection, RiviAskAIConfiguration.shared.language.layoutDirection)` to your view
-- **Note**: The package views handle this automatically, but your custom views need this modifier
+* Ensure state updates are on main thread
+* Check bindings are properly set up
+* Verify @state variables are correctly declared
+
+#### 5. Parameter Change Warning Not Showing
+
+* Check if parameterChangeNotice is nil
+* Verify you're displaying the warning in UI
+* Ensure alert/banner is properly configured
+
+#### 6. Chips Not Removing
+
+* Verify onRemove callback is implemented
+* Check that you're updating the chips Set
+* Ensure you're re-processing the query after removal
+
+#### 7. Wrong Language Displayed
+
+* Problem: UI components show wrong language
+* Solution: Verify you're passing the correct language to initialize()
+* Check: Use RiviAskAIConfiguration.shared.language to verify current language
+
+#### 8. RTL Layout Not Working
+
+* Problem: Arabic text displays but layout is still LTR
+* Solution: Apply .environment(\.layoutDirection, RiviAskAIConfiguration.shared.language.layoutDirection) to your view
+* Note: The package views handle this automatically, but your custom views need this modifier
 
 ---
 
@@ -1130,21 +1322,26 @@ RiviAskAI.initialize(
 
 For questions, issues, or feature requests:
 
-- **Email**: mayank@rivi.co
-- **Example App**: Included in package
+* Email: shubhamnanda@rivi.co
+* Example App: Included in package
 
 ---
 
 ## Changelog
 
-### Version 1.0.0
-- Initial release
-- Support for hotel and flight queries
-- Pre-built UI components (6 customizable views)
-- SSE real-time updates
-- Multi-language support (English and Arabic)
-- RTL layout support for Arabic
-- Parameter change detection
-- Environment configuration (staging, production, custom)
-- Global initialization with auth token and language
-- Confirmation dialog component
+### Version 1.1.0
+
+* Robust SSE Connectivity: Completely refactored SSEClient to support automatic reconnection and exponential backoff strategies.
+* Connection Configuration: Introduced SSEConfig to control timeouts, max retry attempts, and backoff multipliers. Includes presets: .default, .aggressive, and .conservative.
+* Granular State Management: Exposed detailed connection states (Reconnecting, Disconnected with specific reasons) via the new onState callback to enable better UI feedback (e.g., "Retrying in 3s...").
+* Model Updates: Update AskAIFilterRequest (Flights) and AskAIHotelFilterRequest (Hotels) to include missing passenger/guest parameters (adults, children, infant, childAges).
+
+### Improvements
+
+* Smart Error Handling: Added DisconnectReason to distinguish between recoverable errors (Network, Timeout) and permanent failures (Server Closed, Auth Failed).
+* Logging: Core logging infrastructure for the AskAI SDK. This includes the AskAILogLevel enum for defining log severity and the AskAILogger protocol (interface) to allow the SDK to log messages abstractly.
+
+### Breaking Changes
+
+* API Update: RiviAskAI.subscribeToEvents now accepts an optional SSEConfig parameter and an optional onState callback. Existing implementations will need to be updated.
+
