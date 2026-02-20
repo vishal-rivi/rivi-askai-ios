@@ -5,21 +5,27 @@ public class SSEClient {
     private var urlSession: URLSession?
     private var task: URLSessionDataTask?
     
-    // State Tracking
-    private var isConnected = false
-    private var currentUrl: URL? // Required for reconnection
-    
     // Callbacks
     private var eventHandler: ((String) -> Void)?
     private var errorHandler: ((Error) -> Void)?
     private var onStateChange: ((SSEConnectionState) -> Void)?
     
-    // Parsing Buffer
-    private var buffer = ""
-    
-    // Configuration & Retry State
+    // Configuration
     private var currentConfig: SSEConfig = .default
+    private var currentUrl: URL?
+    
+    // MARK: - Thread Safety & Mutable State
+    // An NSRecursiveLock ensures thread safety and prevents deadlocks
+    // if a method re-enters another locked method on the same thread.
+    private let lock = NSRecursiveLock()
+    
+    private var isConnected = false
     private var currentRetryAttempt = 0
+    private var hasBroadcastedConnectedState = false
+    
+    // Buffers
+    private var dataBuffer = Data()
+    private var buffer = ""
     
     // MARK: - Init
     public init() {}
@@ -33,12 +39,6 @@ public class SSEClient {
     
     // MARK: - Public API
     
-    /// Start an SSE connection to the specified URL
-    /// - Parameters:
-    ///   - url: The URL to connect to
-    ///   - request: Optional custom URLRequest to use instead of creating one
-    ///   - onEvent: Callback for received events
-    ///   - onError: Callback for connection errors
     public func connect(
         to url: URL,
         config: SSEConfig = .default,
@@ -47,40 +47,36 @@ public class SSEClient {
         onEvent: @escaping (String) -> Void,
         onError: @escaping (Error) -> Void
     ) {
-        // Save Configuration & Callbacks
+        disconnect(notify: false)
+        
+        lock.lock()
         self.currentConfig = config
         self.currentUrl = url
         self.onStateChange = onStateChange
         self.eventHandler = onEvent
         self.errorHandler = onError
-        
-        // Reset counters
         self.currentRetryAttempt = 0
+        self.hasBroadcastedConnectedState = false
+        lock.unlock()
         
-        // Start
         startConnection(url: url, customRequest: request)
     }
     
-    /// Internal method to start/restart connection
     private func startConnection(url: URL, customRequest: URLRequest? = nil) {
-    
-        disconnect(notify: false)
-        
         updateState(.connecting)
         
-        // Setup Session Config
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.timeoutIntervalForRequest = currentConfig.connectTimeout
         sessionConfig.timeoutIntervalForResource = TimeInterval(Double.infinity)
         
         let delegate = SSESessionDelegate(client: self)
+        
+        lock.lock()
         self.urlSession = URLSession(configuration: sessionConfig, delegate: delegate, delegateQueue: nil)
         
-        // Setup Request
         var finalRequest: URLRequest
         if let r = customRequest {
             finalRequest = r
-            // If the user didn't set a custom timeout, use the config
             if finalRequest.timeoutInterval == 60.0 {
                 finalRequest.timeoutInterval = TimeInterval(Double.infinity)
             }
@@ -89,74 +85,83 @@ public class SSEClient {
             finalRequest.timeoutInterval = TimeInterval(Double.infinity)
         }
         
-        // Ensure Headers
         if finalRequest.value(forHTTPHeaderField: "Accept") == nil {
             finalRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         }
         
-        task = urlSession?.dataTask(with: finalRequest)
-        task?.resume()
-        isConnected = true
+        self.task = urlSession?.dataTask(with: finalRequest)
+        self.task?.resume()
+        self.isConnected = true
+        lock.unlock()
     }
     
     // MARK: - Data Processing
     
     func processData(_ data: Data) {
-        // If this is the first data received, we are officially connected
-        if isConnected {
-             if currentRetryAttempt > 0 || isReconnectingState() {
-                 currentRetryAttempt = 0
-                 updateState(.connected)
-             } else {
-                 updateState(.connected)
-             }
+        lock.lock()
+        
+        // 1. Handle Connection State
+        if isConnected && !hasBroadcastedConnectedState {
+            currentRetryAttempt = 0
+            hasBroadcastedConnectedState = true
+            updateState(.connected)
         }
         
-        guard let dataString = String(data: data, encoding: .utf8) else {
-            print("Error: Received non-UTF8 data")
+        // 2. Handle Raw Bytes to prevent UTF-8 splitting
+        dataBuffer.append(data)
+        
+        guard let validString = String(data: dataBuffer, encoding: .utf8) else {
+            lock.unlock() // Wait for next packet to complete the character
             return
         }
         
-        buffer += dataString
+        // 3. Move to String Buffer
+        dataBuffer.removeAll()
+        buffer += validString
         
-        while let eventEndIndex = buffer.range(of: "\n\n") {
-            let eventString = String(buffer[..<eventEndIndex.lowerBound])
-            buffer = String(buffer[eventEndIndex.upperBound...])
+        var eventsToProcess: [String] = []
+        
+        // 4. Safely extract complete events
+        while let eventEndRange = buffer.range(of: "\n\n") {
+            let eventString = String(buffer[..<eventEndRange.lowerBound])
+            buffer = String(buffer[eventEndRange.upperBound...])
             
             if !eventString.isEmpty {
-                var jsonString = eventString
-                if let dataPrefix = jsonString.range(of: "data: ") {
-                    jsonString = String(jsonString[dataPrefix.upperBound...])
-                }
-                
-                if jsonString.contains("\ndata: ") {
-                    jsonString = jsonString.components(separatedBy: "\ndata: ")
-                        .joined(separator: "")
-                }
-                
-                DispatchQueue.main.async { [weak self] in
-                    self?.eventHandler?(jsonString)
-                }
+                eventsToProcess.append(eventString)
             }
+        }
+        
+        lock.unlock()
+        
+        // 5. Parse and dispatch OUTSIDE the lock to keep the parser fast
+        for eventString in eventsToProcess {
+            parseAndDispatch(eventString)
         }
     }
     
-    private func isReconnectingState() -> Bool {
-        // Simple helper to check if we were previously retrying
-        return currentRetryAttempt > 0
+    private func parseAndDispatch(_ eventString: String) {
+        var jsonString = eventString
+        
+        if let dataPrefix = jsonString.range(of: "data: ") {
+            jsonString = String(jsonString[dataPrefix.upperBound...])
+        }
+        
+        if jsonString.contains("\ndata: ") {
+            jsonString = jsonString.components(separatedBy: "\ndata: ").joined(separator: "")
+        }
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.eventHandler?(jsonString)
+        }
     }
     
     // MARK: - Error Handling & Retry Logic
     
     func handleError(_ error: Error) {
-        print("SSE connection error: \(error.localizedDescription)")
-        
-        // Notify the generic error handler
         DispatchQueue.main.async { [weak self] in
             self?.errorHandler?(error)
         }
         
-        // Determine Reason
         let reason: DisconnectReason
         if let urlError = error as? URLError {
             switch urlError.code {
@@ -170,30 +175,35 @@ public class SSEClient {
             reason = .unknown(cause: error)
         }
         
-        // Check Retry Policy
-        if reason.isRecoverable && currentRetryAttempt < currentConfig.maxReconnectAttempts {
-            attemptReconnect()
+        lock.lock()
+        let shouldRetry = reason.isRecoverable && currentRetryAttempt < currentConfig.maxReconnectAttempts
+        let attempt = currentRetryAttempt
+        lock.unlock()
+        
+        if shouldRetry {
+            attemptReconnect(currentAttempt: attempt)
         } else {
             updateState(.disconnected(reason: reason))
         }
     }
     
-    private func attemptReconnect() {
+    private func attemptReconnect(currentAttempt: Int) {
+        lock.lock()
         currentRetryAttempt += 1
+        let attemptForMath = currentRetryAttempt
+        self.hasBroadcastedConnectedState = false
+        lock.unlock()
         
-        // Exponential Backoff: initial * (multiplier ^ (attempt - 1))
-        let exponent = Double(currentRetryAttempt - 1)
+        let exponent = Double(attemptForMath - 1)
         let backoff = currentConfig.initialReconnectDelay * pow(currentConfig.reconnectBackoffMultiplier, exponent)
         let delay = min(backoff, currentConfig.maxReconnectDelay)
         
-        // Notify UI
         updateState(.reconnecting(
-            attempt: currentRetryAttempt,
+            attempt: attemptForMath,
             maxAttempts: currentConfig.maxReconnectAttempts,
             nextRetryIn: delay
         ))
         
-        // Schedule Retry
         DispatchQueue.global().asyncAfter(deadline: .now() + delay) { [weak self] in
             guard let self = self, let url = self.currentUrl else { return }
             self.startConnection(url: url)
@@ -203,11 +213,17 @@ public class SSEClient {
     // MARK: - Disconnect
     
     public func disconnect(notify: Bool = true) {
+        lock.lock()
+        defer { lock.unlock() }
+        
         if isConnected || task != nil {
             task?.cancel()
             urlSession?.invalidateAndCancel()
+            
             isConnected = false
+            hasBroadcastedConnectedState = false
             buffer = ""
+            dataBuffer.removeAll()
             
             if notify {
                 updateState(.disconnected(reason: .cancelled))
