@@ -32,7 +32,7 @@ struct ContentView: View {
     init() {
         RiviAskAI.initialize(
             environment: .staging,
-            authToken: "494cc45e290cae194c298f2f58cb2a9093b7498a021a155368ffd8346e278efd",
+            authToken: "",
             language: .english
         )
     }
@@ -99,7 +99,7 @@ struct ContentView: View {
                 // Reinitialize RiviAskAI with new language
                 RiviAskAI.initialize(
                     environment: .staging,
-                    authToken: "494cc45e290cae194c298f2f58cb2a9093b7498a021a155368ffd8346e278efd",
+                    authToken: "",
                     language: newValue
                 )
                 
