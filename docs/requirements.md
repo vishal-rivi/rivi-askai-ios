@@ -1,4 +1,4 @@
-## Requirements
+# Requirements
 
 * iOS 16.0+ / macOS 12.0+
 * Swift 5.9+
