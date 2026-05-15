@@ -1,4 +1,4 @@
-### Basic Setup
+# Basic Setup
 
 ```swift
 import SwiftUI
