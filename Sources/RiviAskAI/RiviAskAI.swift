@@ -13,7 +13,6 @@ public enum RiviAskAIEnvironment {
         case .staging:
             return "https://askai-gateway-staging.rivi.co/api/v1"
         case .production:
-        case .production:
             return "https://askai-gateway.rivi.co/api/v1"
         case .custom(let baseURL):
             return baseURL
@@ -128,7 +127,7 @@ public class RiviAskAI {
         rooms: Int = 1,
         cabinType: String = "Economy",
         destination: String,
-        origin: String
+        origin: String = ""
     ) async throws -> AskAIResponse {
         let request = AskAIRequest(
             filterQuery: query,
@@ -192,7 +191,7 @@ public class RiviAskAI {
         rooms: Int = 1,
         cabinType: String = "Economy",
         destination: String,
-        origin: String,
+        origin: String = "",
         onPartialContent: (@MainActor (String) -> Void)? = nil
     ) async throws -> ExplainAIResponse {
         let request = AskAIRequest(
@@ -264,7 +263,7 @@ public class RiviAskAI {
         rooms: Int = 1,
         cabinType: String = "Economy",
         destination: String,
-        origin: String
+        origin: String = ""
     ) async throws -> AskAIResponse {
         let request = AskAIRequest(
             filterQuery: "",

@@ -230,7 +230,7 @@ public static func performSortBestRequest(
     rooms: Int = 1,
     cabinType: String = "Economy",
     destination: String,
-    origin: String
+    origin: String = ""
 ) async throws -> AskAIResponse
 ```
 
@@ -251,7 +251,7 @@ public static func performSortBestRequest(
 * rooms: Number of rooms (hotels) (default: 1)
 * cabinType: Flight cabin class (default: "Economy")
 * destination: Destination location
-* origin: Origin location
+* origin: Origin location (flights only; omit for hotels)
 
 **Returns:** AskAIResponse containing:
 * chips: Set of filter chips to display
@@ -279,8 +279,7 @@ Task {
             infant: 0,
             rooms: 1,
             cabinType: "Economy",
-            destination: "Singapore",
-            origin: "Riyadh"
+            destination: "Singapore"
         )
         
         // Display chips returned from API
@@ -317,7 +316,7 @@ public static func performAskAIRequest(
     rooms: Int = 1,
     cabinType: String = "Economy",
     destination: String,
-    origin: String,
+    origin: String = "",
     onPartialContent: (@MainActor (String) -> Void)? = nil
 ) async throws -> AskAIResponse
 ```
@@ -348,8 +347,7 @@ Task {
             infant: 0,
             rooms: 1,
             cabinType: "Economy",
-            destination: "Dubai",
-            origin: "Riyadh"
+            destination: "Dubai"
         )
         
         // Display chips returned from API
@@ -913,8 +911,7 @@ struct CustomAskAIView: View {
                     currency: "SAR",
                     checkin: checkinDate,
                     checkout: checkoutDate,
-                    destination: "Dubai",
-                    origin: "Riyadh"
+                    destination: "Dubai"
                 )
                 
                 filterChips = response.chips
@@ -1023,8 +1020,7 @@ Task {
             infant: 0,
             rooms: 1,
             cabinType: "Economy",
-            destination: "Dubai",
-            origin: "Riyadh"
+            destination: "Dubai"
         )
         
         filterChips = response.chips
@@ -1058,8 +1054,7 @@ func handleUserQuery(_ query: String) {
                 infant: 0,
                 rooms: 1,
                 cabinType: "Economy",
-                destination: "Dubai",
-                origin: "Riyadh"
+                destination: "Dubai"
             )
             
             filterChips = response.chips
@@ -1093,8 +1088,7 @@ func handleChipRemoval(_ removedChip: String) {
                 currency: "SAR",
                 checkin: checkinDate,
                 checkout: checkoutDate,
-                destination: "Dubai",
-                origin: "Riyadh"
+                destination: "Dubai"
             )
             
             filterChips = response.chips

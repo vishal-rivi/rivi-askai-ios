@@ -89,8 +89,7 @@ struct CustomAskAIView: View {
                     currency: "SAR",
                     checkin: checkinDate,
                     checkout: checkoutDate,
-                    destination: "Dubai",
-                    origin: "Riyadh"
+                    destination: "Dubai"
                 )
                 
                 filterChips = response.chips
@@ -199,8 +198,7 @@ Task {
             infant: 0,
             rooms: 1,
             cabinType: "Economy",
-            destination: "Dubai",
-            origin: "Riyadh"
+            destination: "Dubai"
         )
         
         filterChips = response.chips
@@ -234,8 +232,7 @@ func handleUserQuery(_ query: String) {
                 infant: 0,
                 rooms: 1,
                 cabinType: "Economy",
-                destination: "Dubai",
-                origin: "Riyadh"
+                destination: "Dubai"
             )
             
             filterChips = response.chips
@@ -269,8 +266,7 @@ func handleChipRemoval(_ removedChip: String) {
                 currency: "SAR",
                 checkin: checkinDate,
                 checkout: checkoutDate,
-                destination: "Dubai",
-                origin: "Riyadh"
+                destination: "Dubai"
             )
             
             filterChips = response.chips
