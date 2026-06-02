@@ -35,3 +35,16 @@
 "clear_query_dialog_description" = "Your active query will be cleared in order to change the sorting. Do you wish to proceed?";
 "clear_query_dialog_cancel" = "Back";
 "clear_query_dialog_confirm" = "Proceed";
+
+/* RiviChipsView */
+"chips_clear_all_button" = "Clear all";
+
+/* AlmatarSmartSortBottomSheet */
+"almatar_smart_sort_title" = "Smart Sort";
+"almatar_smart_sort_submit_button" = "Improve results";
+"almatar_smart_sort_prompt_hotel" = "Describe your ideal stay and we'll prioritize the most relevant hotels.";
+"almatar_smart_sort_prompt_flight" = "Describe your ideal trip and we'll prioritize the most relevant flights.";
+"almatar_smart_sort_placeholder_hotel" = "e.g.: Quiet luxury hotel with spa";
+"almatar_smart_sort_placeholder_flight" = "e.g.: Direct morning flights with meals";
+"almatar_smart_sort_close_accessibility" = "Close";
+"almatar_smart_sort_info_accessibility" = "More info";

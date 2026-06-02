@@ -35,3 +35,16 @@
 "clear_query_dialog_description" = "سيتم مسح استعلامك النشط لتغيير الترتيب. هل تريد المتابعة؟";
 "clear_query_dialog_cancel" = "رجوع";
 "clear_query_dialog_confirm" = "متابعة";
+
+/* RiviChipsView */
+"chips_clear_all_button" = "مسح الكل";
+
+/* AlmatarSmartSortBottomSheet */
+"almatar_smart_sort_title" = "الترتيب الذكي";
+"almatar_smart_sort_submit_button" = "تحسين النتائج";
+"almatar_smart_sort_prompt_hotel" = "صف إقامتك المثالية وسنرتب الفنادق الأكثر صلة في الأولوية.";
+"almatar_smart_sort_prompt_flight" = "صف رحلتك المثالية وسنرتب الرحلات الأكثر صلة في الأولوية.";
+"almatar_smart_sort_placeholder_hotel" = "مثال: فندق فاخر هادئ مع سبا";
+"almatar_smart_sort_placeholder_flight" = "مثال: رحلات صباحية مباشرة مع وجبات";
+"almatar_smart_sort_close_accessibility" = "إغلاق";
+"almatar_smart_sort_info_accessibility" = "مزيد من المعلومات";

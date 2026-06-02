@@ -11,6 +11,7 @@ struct ContentView: View {
     @State private var explainContent: String? = nil
     @State private var showAlert = false
     @State private var showConfirmationDialog = false
+    @State private var showAlmatarAskAISheet = false
     
     // Custom UI states
     @State private var showCustomSheet = false
@@ -27,12 +28,12 @@ struct ContentView: View {
     @State private var layoutDirection: LayoutDirection = .leftToRight
     
     // Constants for API calls
-    private let searchId = ""
+    private let searchId = UUID().uuidString
  
     init() {
         RiviAskAI.initialize(
             environment: .staging,
-            authToken: "",
+            authToken: "494cc45e290cae194c298f2f58cb2a9093b7498a021a155368ffd8346e278efd",
             language: .english
         )
     }
@@ -99,7 +100,7 @@ struct ContentView: View {
                 // Reinitialize RiviAskAI with new language
                 RiviAskAI.initialize(
                     environment: .staging,
-                    authToken: "",
+                    authToken: "494cc45e290cae194c298f2f58cb2a9093b7498a021a155368ffd8346e278efd",
                     language: newValue
                 )
                 
@@ -180,6 +181,9 @@ struct ContentView: View {
                         showAskAISheet = true
                     }
                     
+                    RiviAskAIButton(isEnabled: $isAskAIButtonEnabled) {
+                        showAlmatarAskAISheet = true
+                    }
                     Spacer()
                     
                     Toggle("Enable", isOn: $isAskAIButtonEnabled)
@@ -221,6 +225,23 @@ struct ContentView: View {
         .sheet(isPresented: $showAskAISheet) {
             RiviAskAISheet(
                 isPresented: $showAskAISheet,
+                queryType: selectedQueryType,
+                userQuery: userQuery,
+                parameterChangeNotice: parameterChangeNotice,
+                onSubmit: { query in
+                    processQuery(query)
+                },
+                onClear: {
+                    filterChips = []
+                    userQuery = ""
+                    parameterChangeNotice = nil
+                    explainContent = nil
+                }
+            )
+        }
+        .sheet(isPresented: $showAlmatarAskAISheet) {
+            SmartSortBottomSheet(
+                isPresented: $showAlmatarAskAISheet,
                 queryType: selectedQueryType,
                 userQuery: userQuery,
                 parameterChangeNotice: parameterChangeNotice,

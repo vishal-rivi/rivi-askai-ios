@@ -389,7 +389,7 @@ override func viewWillDisappear(_ animated: Bool) {
 
 ## UI Components
 
-RiviAskAI provides six customizable SwiftUI views. Each view has a Configuration struct for complete customization.
+RiviAskAI provides seven customizable SwiftUI views. Each view has a Configuration struct for complete customization.
 
 ---
 
@@ -509,7 +509,7 @@ RiviAskAISheet(
 
 ### 3. RiviChipsView
 
-Displays filter chips with removal capability.
+Displays filter chips with removal capability. When chips are non-empty, a trailing "Clear all" button is shown above the chip row; tapping it empties the chips set and fires the optional `onClearAll` callback.
 
 **Basic Usage:**
 
@@ -518,6 +518,21 @@ RiviChipsView(chips: $filterChips) { removedChip in
     print("Removed: \(removedChip)")
     processUpdatedChips()
 }
+```
+
+**With Clear All:**
+
+```swift
+RiviChipsView(
+    chips: $filterChips,
+    onRemove: { removedChip in
+        processUpdatedChips()
+    },
+    onClearAll: {
+        // Chips set is already emptied; refresh / refetch here
+        processQuery("")
+    }
+)
 ```
 
 **Custom Configuration:**
@@ -529,11 +544,19 @@ customConfig.chipBorderColor = Color.blue
 customConfig.chipTextColor = Color.blue
 customConfig.cornerRadius = 16
 
+// Optional: customize / disable the Clear all button
+customConfig.showClearAllButton = true
+customConfig.clearAllText = "Reset"
+customConfig.clearAllColor = Color.blue
+
 RiviChipsView(
     configuration: customConfig,
     chips: $filterChips,
     onRemove: { removedChip in
         handleChipRemoval(removedChip)
+    },
+    onClearAll: {
+        handleClearAll()
     }
 )
 ```
@@ -546,10 +569,15 @@ RiviChipsView(
 * spacing: Spacing between chips
 * removeIconSize: X icon size
 * textIconSpacing: Text-icon spacing
+* showClearAllButton: Whether to show the trailing "Clear all" button (default: true)
+* clearAllText: Text of the "Clear all" button
+* clearAllFont: Font for the "Clear all" button
+* clearAllSpacing: Vertical spacing between the "Clear all" row and the chips row
 * chipBackgroundColor: Chip background
 * chipBorderColor: Chip border
 * chipTextColor: Chip text color
 * removeIconColor: X icon color
+* clearAllColor: "Clear all" button text color
 
 ---
 
@@ -701,6 +729,96 @@ RiviConfirmationDialog(
 * buttonSpacing: Spacing between buttons
 * buttonHeight: Button height
 * Color customization for all elements (background, buttons, text, borders, overlay)
+
+---
+
+### 7. AlmatarSmartSortBottomSheet
+
+An alternative to `RiviAskAISheet` with Almatar-styled visuals. Functionally equivalent (same callbacks, parameter change notice, clear-all confirmation, info tooltip) but renders differently:
+
+* Close (X) and info (i) live in the navigation toolbar so they pick up the system Liquid Glass treatment on iOS 26+ automatically. On iOS 16–25 they render as standard inline nav-bar buttons.
+* Centered "Smart Sort" title.
+* A white prompt card containing the sparkle prompt, an in-card "Clear all" action, the multiline text input, and a live `count/limit` character counter (default limit: 200).
+* Full-width pill-shaped "Improve results" CTA at the bottom.
+* Tapping (i) shows a custom dark tooltip with an upward-pointing arrow, anchored under the info button. Auto-dismisses after 3 seconds.
+
+**Basic Usage:**
+
+```swift
+RiviAskAIButton(isEnabled: $isAskAIButtonEnabled) {
+    showAlmatarSheet = true
+}
+.sheet(isPresented: $showAlmatarSheet) {
+    AlmatarSmartSortBottomSheet(
+        isPresented: $showAlmatarSheet,
+        queryType: .hotel,
+        onSubmit: { query in
+            processUserQuery(query)
+        }
+    )
+}
+```
+
+**With Pre-filled Query and Warning:**
+
+```swift
+AlmatarSmartSortBottomSheet(
+    isPresented: $showAlmatarSheet,
+    queryType: .flight,
+    userQuery: "Direct morning flights",
+    parameterChangeNotice: "Your prompt includes changes to trip details",
+    onSubmit: { query in processUserQuery(query) },
+    onClear: {
+        // user confirmed clearing the active query
+        filterChips = []
+        userQuery = ""
+    }
+)
+```
+
+**Custom Configuration:**
+
+```swift
+var customConfig = AlmatarSmartSortBottomSheet.Configuration.default
+customConfig.titleText = "Refine Your Search"
+customConfig.submitButtonText = "Apply"
+customConfig.characterLimit = 300
+customConfig.cardBackgroundColor = Color.white
+customConfig.submitButtonBackgroundColor = Color.blue
+
+AlmatarSmartSortBottomSheet(
+    configuration: customConfig,
+    isPresented: $showAlmatarSheet,
+    queryType: .hotel,
+    onSubmit: { query in processUserQuery(query) }
+)
+```
+
+**Configuration Options:**
+
+* titleText: Toolbar title (default localized "Smart Sort")
+* promptText: Prompt/description shown above the input (auto-set based on queryType when empty)
+* placeholderText: Text-field placeholder (auto-set based on queryType when empty)
+* submitButtonText: Submit button text (default localized "Improve results")
+* clearButtonText: In-card "Clear all" button text
+* infoTooltipText: Tooltip text shown on info-button tap (auto-set based on queryType when empty)
+* characterLimit: Maximum input length, surfaced as `count/limit` counter (default: 200)
+* titleFont, promptFont, inputFont, submitButtonFont, clearButtonFont, counterFont, tooltipFont: Font customization
+* padding: Outer padding inside the sheet
+* lineLimit: Reserved-space line limit for the text field
+* spacing: Spacing between sections
+* sparkleIconSize, showSparkleIcon: Sparkle icon controls
+* showInfoButton: Show/hide the toolbar info button
+* cardCornerRadius: Prompt card corner radius
+* submitButtonCornerRadius: Submit button corner radius (default 28 = pill shape)
+* backgroundColor: Sheet background (default light gray `#F2F2F4`)
+* cardBackgroundColor: Prompt card background
+* titleColor, promptColor, textColor: Text colors
+* closeButtonColor, infoButtonColor: Toolbar button tints
+* sparkleIconColor, clearButtonColor: Card accent colors
+* submitButtonBackgroundColor, submitButtonTextColor: Submit button colors
+* counterColor: Character counter color
+* tooltipBackgroundColor, tooltipTextColor: Tooltip colors
 
 ---
 
@@ -1540,6 +1658,16 @@ For questions, issues, or feature requests:
 ---
 
 ## Changelog
+
+### Version 1.3.0
+
+* New UI Component — AlmatarSmartSortBottomSheet: Alternative bottom sheet with Almatar-styled visuals. Functionally equivalent to RiviAskAISheet (same callbacks, parameter change notice, clear-all confirmation, info tooltip) but renders a centered "Smart Sort" title, white prompt card with the sparkle prompt, in-card "Clear all" action, live `count/limit` counter on the text field, and a pill-shaped "Improve results" CTA. Close (X) and info (i) live in the navigation toolbar so they pick up the system Liquid Glass treatment on iOS 26+ automatically.
+* RiviChipsView — Clear All: Added a trailing "Clear all" button that appears above the chip row whenever there are chips to clear. New `Configuration` fields (`showClearAllButton`, `clearAllText`, `clearAllFont`, `clearAllSpacing`, `clearAllColor`) and a new optional `onClearAll` callback on the initializer. Tapping "Clear all" empties the chips set and fires `onClearAll`.
+* Optional `origin` parameter: `performSortBestRequest`, `performAskAIRequest`, and `performExplainAIRequest` now default `origin` to `""`. Hotel call-sites can omit it; flight call-sites should keep passing it.
+
+### Breaking Changes
+
+* RiviChipsView.Configuration: The public `init(...)` signature gained new required parameters (`showClearAllButton`, `clearAllText`, `clearAllFont`, `clearAllSpacing`, `clearAllColor`). Callers that build configurations via `Configuration.default` and mutate properties are unaffected.
 
 ### Version 1.2.0
 

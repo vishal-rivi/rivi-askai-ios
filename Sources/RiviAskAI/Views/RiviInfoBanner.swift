@@ -45,7 +45,7 @@ public struct RiviInfoBanner: View {
         /// Create a default configuration
         public static var `default`: Configuration {
             Configuration(
-                iconName: "ic_info_2",
+                iconName: "ic_sparkle",
                 titleText: "",
                 descriptionText: "info_banner_description".localized(),
                 titleFont: .system(size: 12, weight: .medium),

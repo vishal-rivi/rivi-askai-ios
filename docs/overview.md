@@ -44,6 +44,16 @@ For questions, issues, or feature requests:
 
 ## Changelog
 
+### Version 1.3.0
+
+* New UI Component — AlmatarSmartSortBottomSheet: Alternative bottom sheet with Almatar-styled visuals. Functionally equivalent to RiviAskAISheet (same callbacks, parameter change notice, clear-all confirmation, info tooltip) but renders a centered "Smart Sort" title, white prompt card with the sparkle prompt, in-card "Clear all" action, live `count/limit` counter on the text field, and a pill-shaped "Improve results" CTA. Close (X) and info (i) live in the navigation toolbar so they pick up the system Liquid Glass treatment on iOS 26+ automatically.
+* RiviChipsView — Clear All: Added a trailing "Clear all" button that appears above the chip row whenever there are chips to clear. New `Configuration` fields (`showClearAllButton`, `clearAllText`, `clearAllFont`, `clearAllSpacing`, `clearAllColor`) and a new optional `onClearAll` callback on the initializer. Tapping "Clear all" empties the chips set and fires `onClearAll`.
+* Optional `origin` parameter: `performSortBestRequest`, `performAskAIRequest`, and `performExplainAIRequest` now default `origin` to `""`. Hotel call-sites can omit it; flight call-sites should keep passing it.
+
+### Breaking Changes
+
+* RiviChipsView.Configuration: The public `init(...)` signature gained new required parameters (`showClearAllButton`, `clearAllText`, `clearAllFont`, `clearAllSpacing`, `clearAllColor`). Callers that build configurations via `Configuration.default` and mutate properties are unaffected.
+
 ### Version 1.2.0
 
 * Robust SSE Connectivity: Completely refactored SSEClient to support automatic reconnection and exponential backoff strategies.
