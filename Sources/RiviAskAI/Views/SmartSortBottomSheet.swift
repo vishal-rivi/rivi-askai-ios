@@ -59,6 +59,18 @@ public struct SmartSortBottomSheet: View {
         public var showSparkleIcon: Bool
         /// Whether to show the info button in the toolbar
         public var showInfoButton: Bool
+        /// The image used for the info toolbar button.
+        ///
+        /// Defaults to the system "info" SF Symbol. Pass any `Image` value to override
+        /// — for example `Image("ic_info")` from your asset catalog. If using a template
+        /// asset, configure it with `.renderingMode(.template)` so `infoButtonColor`
+        /// tints it; if using an SF Symbol, the symbol size is controlled by
+        /// `infoButtonIconSize`.
+        public var infoButtonImage: Image
+        /// The point size applied to the info button image (used as the SF Symbol size
+        /// via `.font(...)`). Custom raster images should be sized via the `Image`
+        /// itself (e.g. `.resizable().frame(width:height:)`).
+        public var infoButtonIconSize: CGFloat
         /// Card corner radius
         public var cardCornerRadius: CGFloat
         /// Submit button corner radius
@@ -117,6 +129,8 @@ public struct SmartSortBottomSheet: View {
                 sparkleIconSize: 18,
                 showSparkleIcon: true,
                 showInfoButton: true,
+                infoButtonImage: Image(systemName: "info"),
+                infoButtonIconSize: 14,
                 cardCornerRadius: 16,
                 submitButtonCornerRadius: 28,
                 backgroundColor: Color(light: "#F2F2F4", dark: "#F2F2F4"),
@@ -157,6 +171,8 @@ public struct SmartSortBottomSheet: View {
             sparkleIconSize: CGFloat,
             showSparkleIcon: Bool,
             showInfoButton: Bool,
+            infoButtonImage: Image,
+            infoButtonIconSize: CGFloat,
             cardCornerRadius: CGFloat,
             submitButtonCornerRadius: CGFloat,
             backgroundColor: Color,
@@ -194,6 +210,8 @@ public struct SmartSortBottomSheet: View {
             self.sparkleIconSize = sparkleIconSize
             self.showSparkleIcon = showSparkleIcon
             self.showInfoButton = showInfoButton
+            self.infoButtonImage = infoButtonImage
+            self.infoButtonIconSize = infoButtonIconSize
             self.cardCornerRadius = cardCornerRadius
             self.submitButtonCornerRadius = submitButtonCornerRadius
             self.backgroundColor = backgroundColor
@@ -390,8 +408,8 @@ public struct SmartSortBottomSheet: View {
                 }
             }
         } label: {
-            Image(systemName: "info")
-                .font(.system(size: 14, weight: .semibold))
+            configuration.infoButtonImage
+                .font(.system(size: configuration.infoButtonIconSize, weight: .semibold))
                 .foregroundStyle(configuration.infoButtonColor)
         }
         .accessibilityLabel(Text("almatar_smart_sort_info_accessibility".localized()))
