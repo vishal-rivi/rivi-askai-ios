@@ -1,8 +1,17 @@
 import SwiftUI
 
+/// Which edge of the banner the pointer/notch sits on.
+///
+/// `.top` makes the notch point up (banner sits **below** the anchor button — the default).
+/// `.bottom` flips it so the notch points down (banner sits **above** the anchor button).
+public enum RiviAskAIFirstTimeBannerNotchEdge {
+    case top
+    case bottom
+}
+
 /// A one-time onboarding banner shown the first time the Ask AI button appears.
 /// Renders as a purple card with a sparkle icon, title, description, and a "Let's Go!" CTA,
-/// with an upward-pointing notch at the top so it visually points at the button above it.
+/// with a notch on one edge (top by default) so it visually points at the anchor button.
 public struct RiviAskAIFirstTimeBanner: View {
     // MARK: - Configuration
 
@@ -35,12 +44,17 @@ public struct RiviAskAIFirstTimeBanner: View {
         public var ctaSpacing: CGFloat
         /// Sparkle icon size
         public var iconSize: CGFloat
-        /// Width of the upward notch
+        /// Width of the notch
         public var notchWidth: CGFloat
-        /// Height of the upward notch
+        /// Height of the notch
         public var notchHeight: CGFloat
+        /// Which edge the notch sits on (default `.top`)
+        public var notchEdge: RiviAskAIFirstTimeBannerNotchEdge
         /// Maximum banner width
         public var maxWidth: CGFloat
+        /// Vertical alignment of the sparkle icon relative to the text block.
+        /// Defaults to `.top` so the icon aligns with the first line of the title.
+        public var iconAlignment: VerticalAlignment
 
         // MARK: Theme
 
@@ -78,7 +92,9 @@ public struct RiviAskAIFirstTimeBanner: View {
                 iconSize: 20,
                 notchWidth: 18,
                 notchHeight: 9,
+                notchEdge: .top,
                 maxWidth: 320,
+                iconAlignment: .top,
                 backgroundColor: Color(light: "#9D7BFA", dark: "#9D7BFA"),
                 titleColor: Color(light: "#FFFFFF", dark: "#FFFFFF"),
                 descriptionColor: Color(light: "#FFFFFF", dark: "#FFFFFF"),
@@ -106,7 +122,9 @@ public struct RiviAskAIFirstTimeBanner: View {
             iconSize: CGFloat,
             notchWidth: CGFloat,
             notchHeight: CGFloat,
+            notchEdge: RiviAskAIFirstTimeBannerNotchEdge,
             maxWidth: CGFloat,
+            iconAlignment: VerticalAlignment,
             backgroundColor: Color,
             titleColor: Color,
             descriptionColor: Color,
@@ -131,7 +149,9 @@ public struct RiviAskAIFirstTimeBanner: View {
             self.iconSize = iconSize
             self.notchWidth = notchWidth
             self.notchHeight = notchHeight
+            self.notchEdge = notchEdge
             self.maxWidth = maxWidth
+            self.iconAlignment = iconAlignment
             self.backgroundColor = backgroundColor
             self.titleColor = titleColor
             self.descriptionColor = descriptionColor
@@ -171,7 +191,7 @@ public struct RiviAskAIFirstTimeBanner: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: configuration.ctaSpacing) {
-            HStack(alignment: .top, spacing: configuration.iconSpacing) {
+            HStack(alignment: configuration.iconAlignment, spacing: configuration.iconSpacing) {
                 Image(configuration.iconName, bundle: .module)
                     .resizable()
                     .renderingMode(.template)
@@ -214,8 +234,13 @@ public struct RiviAskAIFirstTimeBanner: View {
                 notchCenterX: notchOffsetFromLeading
             )
             .fill(configuration.backgroundColor)
+            // The shape itself always draws the notch on its top edge. For
+            // `.bottom`, flip vertically so the notch lands on the bottom edge.
+            // The card fill is a flat color, so flipping the shape's drawing
+            // has no visible effect on the content above it.
+            .scaleEffect(y: configuration.notchEdge == .bottom ? -1 : 1)
         )
-        .padding(.top, configuration.notchHeight)
+        .padding(configuration.notchEdge == .top ? .top : .bottom, configuration.notchHeight)
         .environment(\.layoutDirection, RiviAskAIConfiguration.shared.language.layoutDirection)
     }
 }

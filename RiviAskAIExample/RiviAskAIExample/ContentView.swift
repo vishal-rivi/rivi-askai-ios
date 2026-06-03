@@ -13,6 +13,13 @@ struct ContentView: View {
     @State private var showConfirmationDialog = false
     @State private var showAlmatarAskAISheet = false
     @State private var isProcessing: Bool = false
+
+    // First-time onboarding banner customization
+    @State private var coachmarkNotchEdge: RiviAskAIFirstTimeBannerNotchEdge = .top
+    @State private var coachmarkIconAlignTop: Bool = true
+    /// Bumped whenever the user replays onboarding — re-mounts the `RiviAskAIButton`
+    /// via `.id(...)` so its first-appearance coachmark fires again with the latest config.
+    @State private var coachmarkResetCounter: Int = 0
     
     // Custom UI states
     @State private var showCustomSheet = false
@@ -175,21 +182,69 @@ struct ContentView: View {
             }
             
             // 3. Show the Ask AI button
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("3. RiviAskAIButton:")
                     .font(.subheadline)
                     .bold()
-                
+
+                // First-time onboarding banner customization controls
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("First-time banner:")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    HStack(spacing: 8) {
+                        Button {
+                            coachmarkNotchEdge = (coachmarkNotchEdge == .top) ? .bottom : .top
+                        } label: {
+                            Label(
+                                "Notch: \(coachmarkNotchEdge == .top ? "Top" : "Bottom")",
+                                systemImage: coachmarkNotchEdge == .top ? "arrow.up" : "arrow.down"
+                            )
+                            .font(.caption)
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button {
+                            coachmarkIconAlignTop.toggle()
+                        } label: {
+                            Label(
+                                "Icon: \(coachmarkIconAlignTop ? "Top" : "Center")",
+                                systemImage: coachmarkIconAlignTop ? "arrow.up.to.line" : "minus"
+                            )
+                            .font(.caption)
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button {
+                            RiviAskAIFirstTimeBannerStorage.reset()
+                            coachmarkResetCounter += 1
+                        } label: {
+                            Label("Replay", systemImage: "arrow.counterclockwise")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+
                 HStack {
-                    RiviAskAIButton(isEnabled: $isAskAIButtonEnabled) {
+                    RiviAskAIButton(
+                        configuration: askAIButtonConfiguration,
+                        isEnabled: $isAskAIButtonEnabled
+                    ) {
                         showAskAISheet = true
                     }
-                    
-                    RiviAskAIButton(isEnabled: $isAskAIButtonEnabled) {
+                    .id(coachmarkResetCounter)
+
+                    RiviAskAIButton(
+                        configuration: askAIButtonConfiguration,
+                        isEnabled: $isAskAIButtonEnabled
+                    ) {
                         showAlmatarAskAISheet = true
                     }
+                    .id(coachmarkResetCounter)
                     Spacer()
-                    
+
                     Toggle("Enable", isOn: $isAskAIButtonEnabled)
                         .labelsHidden()
                 }
@@ -535,6 +590,20 @@ struct ContentView: View {
             config.descriptionText = content
         }
         return config
+    }
+
+    // MARK: - First-time coachmark configuration
+
+    /// Builds a `RiviAskAIButton.Configuration` whose embedded first-time banner reflects
+    /// the current `coachmarkNotchEdge` / `coachmarkIconAlignTop` toggles.
+    private var askAIButtonConfiguration: RiviAskAIButton.Configuration {
+        var banner = RiviAskAIFirstTimeBanner.Configuration.default
+        banner.notchEdge = coachmarkNotchEdge
+        banner.iconAlignment = coachmarkIconAlignTop ? .top : .center
+
+        var btn = RiviAskAIButton.Configuration.default
+        btn.firstTimeBanner = banner
+        return btn
     }
 
     // MARK: - Business Logic

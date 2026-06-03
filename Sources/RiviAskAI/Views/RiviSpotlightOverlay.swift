@@ -14,11 +14,16 @@ struct RiviAskAIFirstTimeCoachmark: View {
     let onCTA: () -> Void
     let onBackgroundTap: () -> Void
 
+    /// Measured height of the banner card. Used so we can position the card by its
+    /// bottom edge when `configuration.notchEdge == .bottom` (i.e. card sits above the button).
+    @State private var cardHeight: CGFloat = 0
+
     private let pointerWidth: CGFloat = 18
     private let pointerHeight: CGFloat = 10
     private let cardCornerRadius: CGFloat = 16
     private let buttonCutoutCornerRadius: CGFloat = 24
     private let buttonCutoutInset: CGFloat = -6 // negative = larger cutout than button
+    private let buttonGap: CGFloat = 12          // distance between button edge and pointer
 
     public var body: some View {
         GeometryReader { proxy in
@@ -26,8 +31,17 @@ struct RiviAskAIFirstTimeCoachmark: View {
             let cardWidth = min(configuration.maxWidth, proxy.size.width - 32)
             let cardX = clampedCardX(buttonMidX: buttonFrame.midX, cardWidth: cardWidth, screenWidth: proxy.size.width)
             let pointerX = buttonFrame.midX
-            let pointerTopY = buttonFrame.maxY + 12
-            let cardTopY = pointerTopY + pointerHeight
+
+            // Card + pointer positioning differs by notch edge:
+            // - .top    → pointer apex points UP toward button; card sits BELOW button.
+            // - .bottom → pointer apex points DOWN toward button; card sits ABOVE button.
+            let isTopEdge = configuration.notchEdge == .top
+            let pointerTopY: CGFloat = isTopEdge
+                ? buttonFrame.maxY + buttonGap
+                : buttonFrame.minY - buttonGap - pointerHeight
+            let cardTopY: CGFloat = isTopEdge
+                ? pointerTopY + pointerHeight
+                : pointerTopY - cardHeight
 
             ZStack(alignment: .topLeading) {
                 // 1) Dim with cutout that tracks the button
@@ -35,10 +49,13 @@ struct RiviAskAIFirstTimeCoachmark: View {
                     .contentShape(Rectangle())
                     .onTapGesture { onBackgroundTap() }
 
-                // 2) Pointer triangle aligned to button center
+                // 2) Pointer triangle aligned to button center.
+                //    Triangle's apex is at its top by default; flip vertically for .bottom
+                //    so the apex points down toward the button below.
                 Triangle()
                     .fill(configuration.backgroundColor)
                     .frame(width: pointerWidth, height: pointerHeight)
+                    .scaleEffect(y: isTopEdge ? 1 : -1)
                     .offset(x: pointerX - pointerWidth / 2, y: pointerTopY)
 
                 // 3) Banner card. Apply the configured layout direction ONLY to the card's
@@ -50,9 +67,23 @@ struct RiviAskAIFirstTimeCoachmark: View {
                     .background(configuration.backgroundColor)
                     .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
                     .shadow(color: .black.opacity(0.25), radius: 20, x: 0, y: 10)
+                    .background(
+                        GeometryReader { cardProxy in
+                            Color.clear
+                                .preference(key: CoachmarkCardHeightKey.self, value: cardProxy.size.height)
+                        }
+                    )
                     .offset(x: cardX, y: cardTopY)
+                    // For .bottom we need cardHeight before the first paint can land
+                    // in the right place; hide while we're still measuring.
+                    .opacity((!isTopEdge && cardHeight == 0) ? 0 : 1)
             }
             .ignoresSafeArea()
+            .onPreferenceChange(CoachmarkCardHeightKey.self) { newHeight in
+                if newHeight > 0 && abs(newHeight - cardHeight) > 0.5 {
+                    cardHeight = newHeight
+                }
+            }
             .animation(.easeInOut(duration: 0.2), value: presenter.buttonFrame)
         }
         .ignoresSafeArea()
@@ -86,7 +117,7 @@ struct RiviAskAIFirstTimeCoachmark: View {
     private var bannerCard: some View {
         let cfg = configuration
         VStack(alignment: .leading, spacing: cfg.ctaSpacing) {
-            HStack(alignment: .top, spacing: cfg.iconSpacing) {
+            HStack(alignment: cfg.iconAlignment, spacing: cfg.iconSpacing) {
                 Image(cfg.iconName, bundle: .module)
                     .resizable()
                     .renderingMode(.template)
@@ -125,6 +156,15 @@ struct RiviAskAIFirstTimeCoachmark: View {
     private func clampedCardX(buttonMidX: CGFloat, cardWidth: CGFloat, screenWidth: CGFloat) -> CGFloat {
         let ideal = buttonMidX - cardWidth / 2
         return max(16, min(ideal, screenWidth - cardWidth - 16))
+    }
+}
+
+// MARK: - Card height measurement
+
+private struct CoachmarkCardHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 
