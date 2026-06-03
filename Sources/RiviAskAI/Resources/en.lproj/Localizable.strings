@@ -14,8 +14,8 @@
 "ask_ai_sheet_placeholder_flight" = "e.g. Direct flights that reach before 4PM with meals included";
 "ask_ai_sheet_submit_button" = "Improve Results";
 "ask_ai_sheet_clear_button" = "Clear All";
-"ask_ai_sheet_tooltip_hotel" = "AI intelligently sorts hotels to prioritize your preferences - without filtering results.";
-"ask_ai_sheet_tooltip_flight" = "AI intelligently sorts flights to prioritize your preferences - without filtering results.";
+"ask_ai_sheet_tooltip_hotel" = "AI intelligently sorts hotels to prioritize your preferences - without filtering results. AI may make mistakes. Please review all details carefully before booking";
+"ask_ai_sheet_tooltip_flight" = "AI intelligently sorts flights to prioritize your preferences - without filtering results. AI may make mistakes. Please review all details carefully before booking";
 
 /* RiviInfoBanner */
 "info_banner_title" = "AI-sorted results";
