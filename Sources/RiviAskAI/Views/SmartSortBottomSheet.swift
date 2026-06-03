@@ -234,7 +234,6 @@ public struct SmartSortBottomSheet: View {
     // MARK: - State
     @State private var contentBodyHeight: CGFloat = 480
     @State private var showTooltip: Bool = false
-    @State private var showClearConfirmation: Bool = false
     @State private var userQuery: String = ""
 
     /// Approximate height of the inline navigation bar (chrome added by NavigationStack).
@@ -492,7 +491,14 @@ public struct SmartSortBottomSheet: View {
                     borderColor: Color(light: "#D3BD8C", dark: "#D3BD8C"),
                     titleColor: Color(light: "#B17E10", dark: "#B17E10"),
                     descriptionColor: Color(light: "#B17E10", dark: "#B17E10"),
-                    iconColor: Color(light: "#B17E10", dark: "#B17E10")
+                    iconColor: Color(light: "#B17E10", dark: "#B17E10"),
+                    skeletonBaseColor: Color(light: "#D3BD8C", dark: "#D3BD8C"),
+                    skeletonHighlightColor: Color(light: "#FFFFFFCC", dark: "#FFFFFFCC"),
+                    skeletonAnimationDuration: 1.3,
+                    skeletonCornerRadius: 4,
+                    skeletonTitleHeight: 10,
+                    skeletonTitleWidth: 110,
+                    skeletonDescriptionHeight: 9
                 )
                 RiviInfoBanner(configuration: warningConfig)
                     .padding(.horizontal, configuration.padding.leading)
@@ -509,20 +515,6 @@ public struct SmartSortBottomSheet: View {
         .background(configuration.backgroundColor)
         .overlay(alignment: .top) {
             tooltipOverlay()
-        }
-        .overlay {
-            if showClearConfirmation {
-                RiviConfirmationDialog(
-                    isPresented: $showClearConfirmation,
-                    onCancel: nil,
-                    onConfirm: {
-                        userQuery = ""
-                        onClear?()
-                        isPresented = false
-                    }
-                )
-                .transition(.opacity)
-            }
         }
     }
 
@@ -550,9 +542,8 @@ public struct SmartSortBottomSheet: View {
                 Spacer()
                 if !userQuery.isEmpty {
                     Button {
-                        withAnimation(.easeInOut) {
-                            showClearConfirmation = true
-                        }
+                        userQuery = ""
+                        onClear?()
                     } label: {
                         Text(configuration.clearButtonText)
                             .font(configuration.clearButtonFont)

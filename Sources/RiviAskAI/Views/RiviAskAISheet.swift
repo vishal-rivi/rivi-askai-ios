@@ -378,10 +378,17 @@ public struct RiviAskAISheet: View {
                     borderColor: Color(light: "#D3BD8C", dark: "#D3BD8C"),
                     titleColor: Color(light: "#B17E10", dark: "#B17E10"),
                     descriptionColor: Color(light: "#B17E10", dark: "#B17E10"),
-                    iconColor: Color(light: "#B17E10", dark: "#B17E10")
+                    iconColor: Color(light: "#B17E10", dark: "#B17E10"),
+                    skeletonBaseColor: Color(light: "#D3BD8C", dark: "#D3BD8C"),
+                    skeletonHighlightColor: Color(light: "#FFFFFFCC", dark: "#FFFFFFCC"),
+                    skeletonAnimationDuration: 1.3,
+                    skeletonCornerRadius: 4,
+                    skeletonTitleHeight: 10,
+                    skeletonTitleWidth: 110,
+                    skeletonDescriptionHeight: 9
                 )
-                
-                RiviInfoBanner(configuration: warningConfig)
+
+                RiviInfoBanner(configuration: warningConfig, isLoading: false)
                     .padding(.horizontal, configuration.padding.leading)
             }
             

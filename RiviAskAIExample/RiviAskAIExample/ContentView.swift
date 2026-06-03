@@ -12,6 +12,7 @@ struct ContentView: View {
     @State private var showAlert = false
     @State private var showConfirmationDialog = false
     @State private var showAlmatarAskAISheet = false
+    @State private var isProcessing: Bool = false
     
     // Custom UI states
     @State private var showCustomSheet = false
@@ -33,7 +34,7 @@ struct ContentView: View {
     init() {
         RiviAskAI.initialize(
             environment: .staging,
-            authToken: "494cc45e290cae194c298f2f58cb2a9093b7498a021a155368ffd8346e278efd",
+            authToken: "",
             language: .english
         )
     }
@@ -100,7 +101,7 @@ struct ContentView: View {
                 // Reinitialize RiviAskAI with new language
                 RiviAskAI.initialize(
                     environment: .staging,
-                    authToken: "494cc45e290cae194c298f2f58cb2a9093b7498a021a155368ffd8346e278efd",
+                    authToken: "",
                     language: newValue
                 )
                 
@@ -159,14 +160,17 @@ struct ContentView: View {
                 .frame(height: 50)
             }
             
-            // 2. Show the info banner
-            if !filterChips.isEmpty {
+            // 2. Show the info banner (shimmer while a request is in flight)
+            if !filterChips.isEmpty || isProcessing {
                 VStack(alignment: .leading) {
                     Text("2. RiviInfoBanner:")
                         .font(.subheadline)
                         .bold()
 
-                    RiviInfoBanner(configuration: infoBannerConfiguration)
+                    RiviInfoBanner(
+                        configuration: infoBannerConfiguration,
+                        isLoading: isProcessing
+                    )
                 }
             }
             
@@ -543,6 +547,9 @@ struct ContentView: View {
         explainContent = nil
 
         Task {
+            withAnimation { isProcessing = true }
+            defer { Task { @MainActor in withAnimation { isProcessing = false } } }
+
             do {
                 let calendar = Calendar.current
                 let checkinDate = calendar.date(byAdding: .day, value: 7, to: Date())
@@ -559,10 +566,10 @@ struct ContentView: View {
                     destination: selectedQueryType == .hotel ? "Singapore" : "Dubai",
                     origin: "Riyadh"
                 )
-                
+
                 filterChips = response.chips
                 parameterChangeNotice = response.parameterChangeNotice
-                
+
                 // Show alert if there's a parameter change notice
                 if !(response.parameterChangeNotice?.isEmpty ?? true) {
                     withAnimation(.easeInOut) {
@@ -615,12 +622,16 @@ struct ContentView: View {
         // 1) Kill any existing SSE so we don't pile connections on the same searchId
         RiviAskAI.disconnect()
 
+        // Surface the skeleton on the info banner while sort-best is in flight
+        withAnimation { isProcessing = true }
+
         // 2) Subscribe; when SSE state == .connected, fire sort-best
         RiviAskAI.subscribeToEvents(
             searchId: searchId,
             onState: { state in
                 guard case .connected = state else { return }
                 Task {
+                    defer { Task { @MainActor in withAnimation { isProcessing = false } } }
                     do {
                         let response = try await RiviAskAI.performSortBestRequest(
                             searchId: searchId,
