@@ -117,26 +117,7 @@ struct RiviAskAIFirstTimeCoachmark: View {
     private var bannerCard: some View {
         let cfg = configuration
         VStack(alignment: .leading, spacing: cfg.ctaSpacing) {
-            HStack(alignment: cfg.iconAlignment, spacing: cfg.iconSpacing) {
-                Image(cfg.iconName, bundle: .module)
-                    .resizable()
-                    .renderingMode(.template)
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: cfg.iconSize, height: cfg.iconSize)
-                    .foregroundStyle(cfg.iconColor)
-
-                VStack(alignment: .leading, spacing: cfg.textSpacing) {
-                    Text(cfg.titleText)
-                        .font(cfg.titleFont)
-                        .foregroundStyle(cfg.titleColor)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    Text(cfg.descriptionText)
-                        .font(cfg.descriptionFont)
-                        .foregroundStyle(cfg.descriptionColor)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
+            iconAndText(cfg: cfg)
 
             HStack {
                 Spacer(minLength: 0)
@@ -151,6 +132,47 @@ struct RiviAskAIFirstTimeCoachmark: View {
             }
         }
         .padding(cfg.padding)
+    }
+
+    @ViewBuilder
+    private func iconAndText(cfg: RiviAskAIFirstTimeBanner.Configuration) -> some View {
+        switch cfg.iconPlacement {
+        case .leading:
+            HStack(alignment: cfg.iconAlignment, spacing: cfg.iconSpacing) {
+                iconImage(cfg: cfg)
+                textBlock(cfg: cfg)
+            }
+        case .top:
+            VStack(alignment: .leading, spacing: cfg.iconSpacing) {
+                iconImage(cfg: cfg)
+                textBlock(cfg: cfg)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func iconImage(cfg: RiviAskAIFirstTimeBanner.Configuration) -> some View {
+        Image(cfg.iconName, bundle: .module)
+            .resizable()
+            .renderingMode(.template)
+            .aspectRatio(contentMode: .fit)
+            .frame(width: cfg.iconSize, height: cfg.iconSize)
+            .foregroundStyle(cfg.iconColor)
+    }
+
+    @ViewBuilder
+    private func textBlock(cfg: RiviAskAIFirstTimeBanner.Configuration) -> some View {
+        VStack(alignment: .leading, spacing: cfg.textSpacing) {
+            Text(cfg.titleText)
+                .font(cfg.titleFont)
+                .foregroundStyle(cfg.titleColor)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(cfg.descriptionText)
+                .font(cfg.descriptionFont)
+                .foregroundStyle(cfg.descriptionColor)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private func clampedCardX(buttonMidX: CGFloat, cardWidth: CGFloat, screenWidth: CGFloat) -> CGFloat {

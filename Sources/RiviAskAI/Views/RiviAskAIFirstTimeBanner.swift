@@ -9,6 +9,15 @@ public enum RiviAskAIFirstTimeBannerNotchEdge {
     case bottom
 }
 
+/// Where the sparkle icon sits relative to the title/description block.
+///
+/// `.top` (default) — icon above the text block, stacked vertically.
+/// `.leading` — icon to the left of the text block (legacy layout).
+public enum RiviAskAIFirstTimeBannerIconPlacement {
+    case leading
+    case top
+}
+
 /// A one-time onboarding banner shown the first time the Ask AI button appears.
 /// Renders as a purple card with a sparkle icon, title, description, and a "Let's Go!" CTA,
 /// with a notch on one edge (top by default) so it visually points at the anchor button.
@@ -54,7 +63,11 @@ public struct RiviAskAIFirstTimeBanner: View {
         public var maxWidth: CGFloat
         /// Vertical alignment of the sparkle icon relative to the text block.
         /// Defaults to `.top` so the icon aligns with the first line of the title.
+        /// Only used when `iconPlacement == .leading`.
         public var iconAlignment: VerticalAlignment
+        /// Where the icon sits relative to the title/description block.
+        /// `.top` (default) — icon above text. `.leading` — icon left of text (legacy).
+        public var iconPlacement: RiviAskAIFirstTimeBannerIconPlacement
 
         // MARK: Theme
 
@@ -95,6 +108,7 @@ public struct RiviAskAIFirstTimeBanner: View {
                 notchEdge: .top,
                 maxWidth: 320,
                 iconAlignment: .top,
+                iconPlacement: .top,
                 backgroundColor: Color(light: "#9D7BFA", dark: "#9D7BFA"),
                 titleColor: Color(light: "#FFFFFF", dark: "#FFFFFF"),
                 descriptionColor: Color(light: "#FFFFFF", dark: "#FFFFFF"),
@@ -125,6 +139,7 @@ public struct RiviAskAIFirstTimeBanner: View {
             notchEdge: RiviAskAIFirstTimeBannerNotchEdge,
             maxWidth: CGFloat,
             iconAlignment: VerticalAlignment,
+            iconPlacement: RiviAskAIFirstTimeBannerIconPlacement,
             backgroundColor: Color,
             titleColor: Color,
             descriptionColor: Color,
@@ -152,6 +167,7 @@ public struct RiviAskAIFirstTimeBanner: View {
             self.notchEdge = notchEdge
             self.maxWidth = maxWidth
             self.iconAlignment = iconAlignment
+            self.iconPlacement = iconPlacement
             self.backgroundColor = backgroundColor
             self.titleColor = titleColor
             self.descriptionColor = descriptionColor
@@ -189,28 +205,50 @@ public struct RiviAskAIFirstTimeBanner: View {
 
     // MARK: - Body
 
+    @ViewBuilder
+    private var iconImage: some View {
+        Image(configuration.iconName, bundle: .module)
+            .resizable()
+            .renderingMode(.template)
+            .aspectRatio(contentMode: .fit)
+            .frame(width: configuration.iconSize, height: configuration.iconSize)
+            .foregroundStyle(configuration.iconColor)
+    }
+
+    @ViewBuilder
+    private var textBlock: some View {
+        VStack(alignment: .leading, spacing: configuration.textSpacing) {
+            Text(configuration.titleText)
+                .font(configuration.titleFont)
+                .foregroundStyle(configuration.titleColor)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(configuration.descriptionText)
+                .font(configuration.descriptionFont)
+                .foregroundStyle(configuration.descriptionColor)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder
+    private var iconAndText: some View {
+        switch configuration.iconPlacement {
+        case .leading:
+            HStack(alignment: configuration.iconAlignment, spacing: configuration.iconSpacing) {
+                iconImage
+                textBlock
+            }
+        case .top:
+            VStack(alignment: .leading, spacing: configuration.iconSpacing) {
+                iconImage
+                textBlock
+            }
+        }
+    }
+
     public var body: some View {
         VStack(alignment: .leading, spacing: configuration.ctaSpacing) {
-            HStack(alignment: configuration.iconAlignment, spacing: configuration.iconSpacing) {
-                Image(configuration.iconName, bundle: .module)
-                    .resizable()
-                    .renderingMode(.template)
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: configuration.iconSize, height: configuration.iconSize)
-                    .foregroundStyle(configuration.iconColor)
-
-                VStack(alignment: .leading, spacing: configuration.textSpacing) {
-                    Text(configuration.titleText)
-                        .font(configuration.titleFont)
-                        .foregroundStyle(configuration.titleColor)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    Text(configuration.descriptionText)
-                        .font(configuration.descriptionFont)
-                        .foregroundStyle(configuration.descriptionColor)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
+            iconAndText
 
             HStack {
                 Spacer(minLength: 0)

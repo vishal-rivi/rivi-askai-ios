@@ -17,6 +17,7 @@ struct ContentView: View {
     // First-time onboarding banner customization
     @State private var coachmarkNotchEdge: RiviAskAIFirstTimeBannerNotchEdge = .top
     @State private var coachmarkIconAlignTop: Bool = true
+    @State private var coachmarkIconPlacement: RiviAskAIFirstTimeBannerIconPlacement = .top
     /// Bumped whenever the user replays onboarding — re-mounts the `RiviAskAIButton`
     /// via `.id(...)` so its first-appearance coachmark fires again with the latest config.
     @State private var coachmarkResetCounter: Int = 0
@@ -193,37 +194,55 @@ struct ContentView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
 
-                    HStack(spacing: 8) {
-                        Button {
-                            coachmarkNotchEdge = (coachmarkNotchEdge == .top) ? .bottom : .top
-                        } label: {
-                            Label(
-                                "Notch: \(coachmarkNotchEdge == .top ? "Top" : "Bottom")",
-                                systemImage: coachmarkNotchEdge == .top ? "arrow.up" : "arrow.down"
-                            )
-                            .font(.caption)
-                        }
-                        .buttonStyle(.bordered)
-
-                        Button {
-                            coachmarkIconAlignTop.toggle()
-                        } label: {
-                            Label(
-                                "Icon: \(coachmarkIconAlignTop ? "Top" : "Center")",
-                                systemImage: coachmarkIconAlignTop ? "arrow.up.to.line" : "minus"
-                            )
-                            .font(.caption)
-                        }
-                        .buttonStyle(.bordered)
-
-                        Button {
-                            RiviAskAIFirstTimeBannerStorage.reset()
-                            coachmarkResetCounter += 1
-                        } label: {
-                            Label("Replay", systemImage: "arrow.counterclockwise")
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 8) {
+                            Button {
+                                coachmarkNotchEdge = (coachmarkNotchEdge == .top) ? .bottom : .top
+                            } label: {
+                                Label(
+                                    "Notch: \(coachmarkNotchEdge == .top ? "Top" : "Bottom")",
+                                    systemImage: coachmarkNotchEdge == .top ? "arrow.up" : "arrow.down"
+                                )
                                 .font(.caption)
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button {
+                                coachmarkIconAlignTop.toggle()
+                            } label: {
+                                Label(
+                                    "Align: \(coachmarkIconAlignTop ? "Top" : "Center")",
+                                    systemImage: coachmarkIconAlignTop ? "arrow.up.to.line" : "minus"
+                                )
+                                .font(.caption)
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(coachmarkIconPlacement == .top)
                         }
-                        .buttonStyle(.borderedProminent)
+
+                        HStack(spacing: 8) {
+                            Button {
+                                coachmarkIconPlacement = (coachmarkIconPlacement == .leading) ? .top : .leading
+                            } label: {
+                                Label(
+                                    "Icon: \(coachmarkIconPlacement == .leading ? "Leading" : "Above text")",
+                                    systemImage: coachmarkIconPlacement == .leading
+                                        ? "rectangle.lefthalf.inset.filled"
+                                        : "rectangle.tophalf.inset.filled"
+                                )
+                                .font(.caption)
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button {
+                                RiviAskAIFirstTimeBannerStorage.reset()
+                                coachmarkResetCounter += 1
+                            } label: {
+                                Label("Replay", systemImage: "arrow.counterclockwise")
+                                    .font(.caption)
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
                     }
                 }
 
@@ -600,6 +619,7 @@ struct ContentView: View {
         var banner = RiviAskAIFirstTimeBanner.Configuration.default
         banner.notchEdge = coachmarkNotchEdge
         banner.iconAlignment = coachmarkIconAlignTop ? .top : .center
+        banner.iconPlacement = coachmarkIconPlacement
 
         var btn = RiviAskAIButton.Configuration.default
         btn.firstTimeBanner = banner
