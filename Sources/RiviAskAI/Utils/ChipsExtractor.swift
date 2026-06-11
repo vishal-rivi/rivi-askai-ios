@@ -142,8 +142,12 @@ public class ChipsExtractor {
     private static func extractHotelChips(_ entity: [String: Any]) -> Set<String> {
         var chips = Set<String>()
         
-        // Star rating
-        if let starRatings = entity["star_rating"] as? [String], !starRatings.isEmpty {
+        // Star rating — API returns [Int] but guard against [String] too
+        if let starRatings = entity["star_rating"] as? [Int], !starRatings.isEmpty {
+            for rating in starRatings {
+                chips.insert("\(rating) star")
+            }
+        } else if let starRatings = entity["star_rating"] as? [String], !starRatings.isEmpty {
             for rating in starRatings {
                 chips.insert("\(rating) star")
             }
