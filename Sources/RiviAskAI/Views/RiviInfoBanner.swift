@@ -31,8 +31,10 @@ public struct RiviInfoBanner: View {
         
         // MARK: - Theme Properties
         
-        /// Background color for the banner
+        /// Background color for the banner. Ignored when `backgroundGradient` is set.
         public var backgroundColor: Color
+        /// Optional gradient background for the banner. Takes priority over `backgroundColor` when set.
+        public var backgroundGradient: LinearGradient?
         /// Border color for the banner
         public var borderColor: Color
         /// Title text color
@@ -73,12 +75,17 @@ public struct RiviInfoBanner: View {
                 textSpacing: 2,
                 showIcon: true,
                 iconSize: 12,
-                backgroundColor: Color(light: "#EFE5FF", dark: "#EFE5FF"),
-                borderColor: Color(light: "#D4B5FF", dark: "#D4B5FF"),
-                titleColor: Color(light: "#7B3AEC", dark: "#7B3AEC"),
-                descriptionColor: Color(light: "#7B3AEC", dark: "#7B3AEC"),
+                backgroundColor: Color(light: "#DFEEFD", dark: "#DFEEFD"),
+                backgroundGradient: LinearGradient(
+                    colors: [Color(light: "#DFEEFD", dark: "#DFEEFD"), Color(light: "#F0EAFE", dark: "#F0EAFE")],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ),
+                borderColor: .clear,
+                titleColor: Color(light: "#0F172A", dark: "#0F172A"),
+                descriptionColor: Color(light: "#0F172A", dark: "#0F172A"),
                 iconColor: Color(light: "#7B3AEC", dark: "#7B3AEC"),
-                skeletonBaseColor: Color(light: "#D4B5FF", dark: "#D4B5FF"),
+                skeletonBaseColor: Color(light: "#C5DCFA", dark: "#C5DCFA"),
                 skeletonHighlightColor: Color(light: "#FFFFFFCC", dark: "#FFFFFFCC"),
                 skeletonAnimationDuration: 1.3,
                 skeletonCornerRadius: 4,
@@ -101,6 +108,7 @@ public struct RiviInfoBanner: View {
             showIcon: Bool,
             iconSize: CGFloat,
             backgroundColor: Color,
+            backgroundGradient: LinearGradient? = nil,
             borderColor: Color,
             titleColor: Color,
             descriptionColor: Color,
@@ -125,6 +133,7 @@ public struct RiviInfoBanner: View {
             self.showIcon = showIcon
             self.iconSize = iconSize
             self.backgroundColor = backgroundColor
+            self.backgroundGradient = backgroundGradient
             self.borderColor = borderColor
             self.titleColor = titleColor
             self.descriptionColor = descriptionColor
@@ -146,6 +155,10 @@ public struct RiviInfoBanner: View {
 
     /// When true, the banner shows shimmering skeleton placeholders instead of the real content.
     private let isLoading: Bool
+
+    @State private var displayedText: String = ""
+    @State private var typewriterTask: Task<Void, Never>? = nil
+    @State private var typewriterDone: Bool = false
 
     // MARK: - Initialization
 
@@ -180,14 +193,59 @@ public struct RiviInfoBanner: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(configuration.padding)
-        .background(configuration.backgroundColor)
+        .background {
+            if let gradient = configuration.backgroundGradient {
+                RoundedRectangle(cornerRadius: configuration.cornerRadius)
+                    .fill(gradient)
+            } else {
+                RoundedRectangle(cornerRadius: configuration.cornerRadius)
+                    .fill(configuration.backgroundColor)
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: configuration.cornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: configuration.cornerRadius)
-                .stroke(configuration.borderColor, lineWidth: 1)
-        )
-        .padding(1)
         .environment(\.layoutDirection, RiviAskAIConfiguration.shared.language.layoutDirection)
+        .onChange(of: isLoading) { newValue in
+            if !newValue {
+                typewriterDone = false
+                startTypewriter(for: configuration.descriptionText)
+            } else {
+                typewriterTask?.cancel()
+                typewriterDone = false
+                displayedText = ""
+            }
+        }
+        .onChange(of: configuration.descriptionText) { newText in
+            if !isLoading {
+                typewriterDone = false
+                startTypewriter(for: newText)
+            }
+        }
+        .onAppear {
+            // Only start if the animation hasn't completed yet — prevents re-animation on scroll
+            if !isLoading && !configuration.descriptionText.isEmpty && !typewriterDone {
+                startTypewriter(for: configuration.descriptionText)
+            }
+        }
+        .onDisappear {
+            typewriterTask?.cancel()
+        }
+    }
+
+    // MARK: - Typewriter
+
+    private func startTypewriter(for text: String) {
+        typewriterTask?.cancel()
+        displayedText = ""
+        guard !text.isEmpty else { return }
+        typewriterTask = Task {
+            for char in text {
+                guard !Task.isCancelled else { return }
+                try? await Task.sleep(nanoseconds: 20_000_000) // 20ms per character
+                guard !Task.isCancelled else { return }
+                await MainActor.run { displayedText += String(char) }
+            }
+            await MainActor.run { typewriterDone = true }
+        }
     }
 
     // MARK: - Subviews
@@ -210,7 +268,7 @@ public struct RiviInfoBanner: View {
                 .font(configuration.titleFont)
                 .foregroundStyle(configuration.titleColor)
         }
-        Text(configuration.descriptionText)
+        Text(typewriterDone ? configuration.descriptionText : displayedText)
             .font(configuration.descriptionFont)
             .foregroundStyle(configuration.descriptionColor)
     }

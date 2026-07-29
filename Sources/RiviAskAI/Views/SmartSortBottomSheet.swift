@@ -583,6 +583,11 @@ public struct SmartSortBottomSheet: View {
         .clipShape(RoundedRectangle(cornerRadius: configuration.cardCornerRadius))
     }
 
+    /// Submit is enabled only once the user has typed non-whitespace text.
+    private var isSubmitEnabled: Bool {
+        !userQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     @ViewBuilder
     private func submitButton() -> some View {
         Button {
@@ -591,12 +596,13 @@ public struct SmartSortBottomSheet: View {
         } label: {
             Text(configuration.submitButtonText)
                 .font(configuration.submitButtonFont)
-                .foregroundStyle(configuration.submitButtonTextColor)
+                .foregroundStyle(isSubmitEnabled ? configuration.submitButtonTextColor : Color(UIColor.systemGray))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
-                .background(configuration.submitButtonBackgroundColor)
+                .background(isSubmitEnabled ? configuration.submitButtonBackgroundColor : Color(UIColor.systemGray5))
                 .clipShape(RoundedRectangle(cornerRadius: configuration.submitButtonCornerRadius))
         }
+        .disabled(!isSubmitEnabled)
     }
 }
 

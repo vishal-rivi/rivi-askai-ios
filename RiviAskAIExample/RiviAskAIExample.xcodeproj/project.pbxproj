@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		776B3AA52DEF3CF8002F0F30 /* RiviAskAI in Frameworks */ = {isa = PBXBuildFile; productRef = 776B3AA42DEF3CF8002F0F30 /* RiviAskAI */; };
 		940F78142F9F3D8500F1B1D4 /* RiviAskAI in Frameworks */ = {isa = PBXBuildFile; productRef = 940F78132F9F3D8500F1B1D4 /* RiviAskAI */; };
+		949358962FE4F752001D861C /* RiviAskAI in Frameworks */ = {isa = PBXBuildFile; productRef = 949358952FE4F752001D861C /* RiviAskAI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +44,7 @@
 			files = (
 				940F78142F9F3D8500F1B1D4 /* RiviAskAI in Frameworks */,
 				776B3AA52DEF3CF8002F0F30 /* RiviAskAI in Frameworks */,
+				949358962FE4F752001D861C /* RiviAskAI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -87,6 +89,7 @@
 			packageProductDependencies = (
 				776B3AA42DEF3CF8002F0F30 /* RiviAskAI */,
 				940F78132F9F3D8500F1B1D4 /* RiviAskAI */,
+				949358952FE4F752001D861C /* RiviAskAI */,
 			);
 			productName = RiviAskAIExample;
 			productReference = 776B3A952DEF3CE6002F0F30 /* RiviAskAIExample.app */;
@@ -117,7 +120,7 @@
 			mainGroup = 776B3A8C2DEF3CE6002F0F30;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				940F78122F9F3D8500F1B1D4 /* XCLocalSwiftPackageReference "../../rivi-askai-ios" */,
+				949358942FE4F752001D861C /* XCLocalSwiftPackageReference "../../RiviAskAI" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 776B3A962DEF3CE6002F0F30 /* Products */;
@@ -353,9 +356,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		940F78122F9F3D8500F1B1D4 /* XCLocalSwiftPackageReference "../../rivi-askai-ios" */ = {
+		949358942FE4F752001D861C /* XCLocalSwiftPackageReference "../../RiviAskAI" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = "../../rivi-askai-ios";
+			relativePath = ../../RiviAskAI;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -365,6 +368,10 @@
 			productName = RiviAskAI;
 		};
 		940F78132F9F3D8500F1B1D4 /* RiviAskAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RiviAskAI;
+		};
+		949358952FE4F752001D861C /* RiviAskAI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RiviAskAI;
 		};

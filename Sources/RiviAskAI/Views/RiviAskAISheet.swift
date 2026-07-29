@@ -40,7 +40,9 @@ public struct RiviAskAISheet: View {
         public var showInfoButton: Bool
         /// The info button icon size
         public var infoButtonSize: CGFloat
-        
+        /// Configuration for the chips view displayed above the text field
+        public var chipsConfiguration: RiviChipsView.Configuration
+
         // MARK: - Theme Properties
         
         /// Background color for the sheet
@@ -92,14 +94,31 @@ public struct RiviAskAISheet: View {
                 headerSpacing: 8,
                 showInfoButton: true,
                 infoButtonSize: 12,
+                chipsConfiguration: RiviChipsView.Configuration(
+                    font: .system(size: 14, weight: .regular),
+                    cornerRadius: 8,
+                    chipPadding: EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12),
+                    spacing: 8,
+                    removeIconSize: 12,
+                    textIconSpacing: 6,
+                    showClearAllButton: false,
+                    clearAllText: "chips_clear_all_button".localized(),
+                    clearAllFont: .system(size: 14, weight: .semibold),
+                    clearAllSpacing: 8,
+                    chipBackgroundColor: Color(light: "#F3F7FC", dark: "#F2F2F7"),
+                    chipBorderColor: Color(light: "#FFFFFF", dark: "#E5E5EA"),
+                    chipTextColor: Color(light: "#64748B", dark: "#1C1C1E"),
+                    removeIconColor: Color(light: "#8E8E93", dark: "#8E8E93"),
+                    clearAllColor: Color(light: "#017ACB", dark: "#7C3AED")
+                ),
                 backgroundColor: Color(light: "#FFFFFF", dark: "#FFFFFF"),
-                titleColor: Color(light: "#7C3AED", dark: "#7C3AED"),
-                titleBackgroundColor: Color(light: "#EFE5FF", dark: "#EFE5FF"),
+                titleColor: Color(light: "#171A1C", dark: "#7C3AED"),
+                titleBackgroundColor: Color(light: "#FFFFFF", dark: "#EFE5FF"),
                 textColor: Color(light: "#1A1A1E", dark: "#1A1A1E"),
-                closeButtonColor: Color(light: "#7C3AED", dark: "#7C3AED"),
-                submitButtonBackgroundColor: Color(light: "#7B3AEC", dark: "#7B3AEC"),
+                closeButtonColor: Color(light: "#171A1C", dark: "#7C3AED"),
+                submitButtonBackgroundColor: Color(light: "#017ACB", dark: "#7B3AEC"),
                 submitButtonTextColor: Color(light: "#FFFFFF", dark: "#FFFFFF"),
-                headerIconColor: Color(light: "#7B3AEC", dark: "#7B3AEC"),
+                headerIconColor: Color(light: "#349EE5", dark: "#FFFFFF"),
                 textFieldBorderColor: Color(light: "#D9D9DE", dark: "#D9D9DE"),
                 textFieldBackgroundColor: Color(light: "#FFFFFF", dark: "#FFFFFF"),
                 infoButtonColor: Color(light: "#9294A0", dark: "#9294A0"),
@@ -108,7 +127,7 @@ public struct RiviAskAISheet: View {
                 tooltipFont: .system(size: 14, weight: .regular),
                 clearButtonText: "ask_ai_sheet_clear_button".localized(),
                 clearButtonFont: .system(size: 14, weight: .medium),
-                clearButtonColor: Color(light: "#7C3AED", dark: "#7C3AED")
+                clearButtonColor: Color(light: "#017ACB", dark: "#7C3AED")
             )
         }
         
@@ -128,6 +147,7 @@ public struct RiviAskAISheet: View {
             headerSpacing: CGFloat,
             showInfoButton: Bool,
             infoButtonSize: CGFloat,
+            chipsConfiguration: RiviChipsView.Configuration,
             backgroundColor: Color,
             titleColor: Color,
             titleBackgroundColor: Color,
@@ -163,6 +183,7 @@ public struct RiviAskAISheet: View {
             self.headerSpacing = headerSpacing
             self.showInfoButton = showInfoButton
             self.infoButtonSize = infoButtonSize
+            self.chipsConfiguration = chipsConfiguration
             self.backgroundColor = backgroundColor
             self.titleColor = titleColor
             self.titleBackgroundColor = titleBackgroundColor
@@ -184,7 +205,6 @@ public struct RiviAskAISheet: View {
     // MARK: - Properties
     @State private var sheetContentHeight: CGFloat = 0
     @State private var showTooltip: Bool = false
-    @State private var showClearConfirmation: Bool = false
     
     /// The configuration for this sheet
     private let configuration: Configuration
@@ -204,6 +224,12 @@ public struct RiviAskAISheet: View {
     /// The action to perform when the user taps "Clear All"
     private let onClear: (() -> Void)?
 
+    /// The chips to display above the text field
+    @Binding private var chips: Set<String>
+
+    /// The action to perform when a chip is removed
+    private let onRemoveChip: ((String) -> Void)?
+
     // MARK: - Initialization
 
     /// Initialize with a configuration and presentation binding
@@ -220,8 +246,10 @@ public struct RiviAskAISheet: View {
         isPresented: Binding<Bool>,
         queryType: QueryType,
         userQuery: String = "",
+        chips: Binding<Set<String>> = .constant([]),
         parameterChangeNotice: String? = nil,
         onSubmit: @escaping (String) -> Void,
+        onRemoveChip: ((String) -> Void)? = nil,
         onClear: (() -> Void)? = nil
     ) {
         // Create a modified configuration with query-type-specific text
@@ -252,15 +280,29 @@ public struct RiviAskAISheet: View {
         self.configuration = modifiedConfig
         self._isPresented = isPresented
         self._userQuery = State(initialValue: userQuery)
+        self._chips = chips
         self.parameterChangeNotice = parameterChangeNotice
         self.onSubmit = onSubmit
+        self.onRemoveChip = onRemoveChip
         self.onClear = onClear
     }
     
     // MARK: - Body
     public var body: some View {
-        if #available(iOS 16.0, *) {
+        if #available(iOS 16.4, *) {
             content()
+                .ignoresSafeArea(edges: .bottom)
+                .readSize(onChange: { size in
+                    sheetContentHeight = size.height
+                })
+                .environment(\.layoutDirection, RiviAskAIConfiguration.shared.language.layoutDirection)
+                .presentationDetents([.height(sheetContentHeight)])
+                .presentationDragIndicator(.hidden)
+                .presentationCornerRadius(12)
+                .presentationBackground(configuration.backgroundColor)
+        } else if #available(iOS 16.0, *) {
+            content()
+                .ignoresSafeArea(edges: .bottom)
                 .readSize(onChange: { size in
                     sheetContentHeight = size.height
                 })
@@ -270,77 +312,68 @@ public struct RiviAskAISheet: View {
         } else {
             // Fallback on earlier versions
             content()
+                .ignoresSafeArea(edges: .bottom)
                 .environment(\.layoutDirection, RiviAskAIConfiguration.shared.language.layoutDirection)
         }
     }
     
+    /// Submit is enabled only once the user has typed non-whitespace text.
+    private var isSubmitEnabled: Bool {
+        !userQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     // MARK: - Methods
     @ViewBuilder
     private func content() -> some View {
-        VStack(spacing: configuration.spacing) {
-            // Header with title and close button
-            HStack {
-                HStack(spacing: configuration.headerSpacing) {
-                    if configuration.showHeaderIcon {
-                        Image("ic_sparkle", bundle: .module)
-                            .resizable()
-                            .renderingMode(.template)
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: configuration.headerIconSize, height: configuration.headerIconSize)
-                            .foregroundStyle(configuration.headerIconColor)
-                    }
-                    
-                    Text(configuration.titleText)
-                        .font(configuration.titleFont)
-                        .foregroundStyle(configuration.titleColor)
-                    
-                    if configuration.showInfoButton {
-                        Button {
-                            showTooltip = true
-                            
-                            // Auto-hide tooltip after 3 seconds
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                showTooltip = false
-                            }
-                        } label: {
-                            Image("ic_info", bundle: .module)
+        ZStack(alignment: .topLeading) {
+            VStack(spacing: configuration.spacing) {
+
+                // Header with title and close button
+                HStack {
+                    HStack(spacing: configuration.headerSpacing) {
+                        if configuration.showHeaderIcon {
+                            Image("ic_sparkle", bundle: .module)
                                 .resizable()
                                 .renderingMode(.template)
                                 .aspectRatio(contentMode: .fit)
-                                .frame(width: configuration.infoButtonSize, height: configuration.infoButtonSize)
-                                .foregroundStyle(configuration.infoButtonColor)
+                                .frame(width: configuration.headerIconSize, height: configuration.headerIconSize)
+                                .foregroundStyle(LinearGradient(
+                                    colors: [Color(light: "#349EE5", dark: "#349EE5"), Color(light: "#7F91F5", dark: "#7F91F5")],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                ))
                         }
-                        .popover(isPresented: $showTooltip, arrowEdge: .bottom) {
-                            if #available(iOS 16.4, *) {
-                                Text(configuration.infoTooltipText)
-                                    .fontWeight(.light)
-                                    .foregroundStyle(configuration.tooltipTextColor)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                    .background(configuration.tooltipBackgroundColor)
-                                    .presentationCompactAdaptation(.popover)
-                            } else {
-                                // Fallback on earlier versions
-                                Text(configuration.infoTooltipText)
-                                    .fontWeight(.light)
-                                    .foregroundStyle(configuration.tooltipTextColor)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                    .background(configuration.tooltipBackgroundColor)
+
+                        Text(configuration.titleText)
+                            .font(configuration.titleFont)
+                            .foregroundStyle(configuration.titleColor)
+
+                        if configuration.showInfoButton {
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) { showTooltip.toggle() }
+                                if showTooltip {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                        withAnimation(.easeInOut(duration: 0.2)) { showTooltip = false }
+                                    }
+                                }
+                            } label: {
+                                Image("ic_info", bundle: .module)
+                                    .resizable()
+                                    .renderingMode(.template)
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: configuration.infoButtonSize, height: configuration.infoButtonSize)
+                                    .foregroundStyle(configuration.infoButtonColor)
                             }
                         }
                     }
-                }
                 
                 Spacer()
 
-                if !userQuery.isEmpty {
+                if !userQuery.isEmpty || !chips.isEmpty {
                     Button(action: {
-                        withAnimation(.easeInOut) {
-                            showClearConfirmation = true
-                        }
+                        userQuery = ""
+                        chips.removeAll()
+                        onClear?()
                     }) {
                         Text(configuration.clearButtonText)
                             .font(configuration.clearButtonFont)
@@ -391,7 +424,18 @@ public struct RiviAskAISheet: View {
                 RiviInfoBanner(configuration: warningConfig, isLoading: false)
                     .padding(.horizontal, configuration.padding.leading)
             }
-            
+
+            if !chips.isEmpty {
+                RiviChipsView(
+                    configuration: configuration.chipsConfiguration,
+                    chips: $chips,
+                    onRemove: { chip in
+                        onRemoveChip?(chip)
+                    }
+                )
+                .padding(.horizontal, configuration.padding.leading)
+            }
+
             TextField(
                 configuration.placeholderText,
                 text: $userQuery,
@@ -402,9 +446,9 @@ public struct RiviAskAISheet: View {
             .lineLimit(configuration.lineLimit, reservesSpace: true)
             .padding(12)
             .background(configuration.textFieldBackgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 12)
                     .stroke(configuration.textFieldBorderColor, lineWidth: 1)
             )
             .padding(.horizontal, configuration.padding.leading)
@@ -416,28 +460,74 @@ public struct RiviAskAISheet: View {
             }) {
                 Text(configuration.submitButtonText)
                     .font(configuration.submitButtonFont)
-                    .foregroundStyle(configuration.submitButtonTextColor)
+                    .foregroundStyle(isSubmitEnabled ? configuration.submitButtonTextColor : Color(UIColor.systemGray))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(configuration.submitButtonBackgroundColor)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .background(isSubmitEnabled ? configuration.submitButtonBackgroundColor : Color(UIColor.systemGray5))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .disabled(!isSubmitEnabled)
             .padding(.horizontal, configuration.padding.leading)
+            .padding(.bottom, configuration.padding.bottom)
         }
         .background(configuration.backgroundColor)
-        .overlay {
-            if showClearConfirmation {
-                RiviConfirmationDialog(
-                    isPresented: $showClearConfirmation,
-                    onCancel: nil,
-                    onConfirm: {
-                        userQuery = ""
-                        onClear?()
-                        isPresented = false
-                    }
+
+            if showTooltip {
+                InfoTooltipView(
+                    text: configuration.infoTooltipText,
+                    font: configuration.tooltipFont,
+                    textColor: configuration.tooltipTextColor,
+                    backgroundColor: configuration.tooltipBackgroundColor
                 )
-                .transition(.opacity)
+                .padding(.leading, configuration.padding.leading)
+                .padding(.top, configuration.padding.top + CGFloat(configuration.headerIconSize) + 4)
+                .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .top)))
+                .zIndex(10)
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) { showTooltip = false }
+                }
             }
         }
+    }
+}
+
+// Arrow at the TOP of the bubble — used when the tooltip sits below the anchor point.
+private struct InfoTooltipUpArrowShape: Shape {
+    var cornerRadius: CGFloat = 8
+    var arrowW: CGFloat = 14
+    var arrowH: CGFloat = 8
+    var arrowLeadingOffset: CGFloat = 80
+
+    func path(in rect: CGRect) -> Path {
+        let bodyRect = CGRect(x: 0, y: arrowH, width: rect.width, height: rect.height - arrowH)
+        var path = Path(roundedRect: bodyRect, cornerRadius: cornerRadius)
+        let midX = min(max(arrowW / 2, arrowLeadingOffset + arrowW / 2), rect.width - arrowW / 2)
+        path.move(to: CGPoint(x: midX - arrowW / 2, y: arrowH))
+        path.addLine(to: CGPoint(x: midX, y: 0))
+        path.addLine(to: CGPoint(x: midX + arrowW / 2, y: arrowH))
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct InfoTooltipView: View {
+    let text: String
+    let font: Font
+    let textColor: Color
+    let backgroundColor: Color
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 10, weight: .regular))
+            .foregroundStyle(textColor)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(10)
+            .padding(.top, 8) // account for up-arrow height
+            .frame(width: 190, height: 93, alignment: .topLeading)
+            .background(
+                InfoTooltipUpArrowShape(cornerRadius: 8, arrowLeadingOffset: 80)
+                    .fill(backgroundColor)
+            )
     }
 }

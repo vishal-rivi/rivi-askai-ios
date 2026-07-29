@@ -158,10 +158,6 @@ public class SSEClient {
     // MARK: - Error Handling & Retry Logic
     
     func handleError(_ error: Error) {
-        DispatchQueue.main.async { [weak self] in
-            self?.errorHandler?(error)
-        }
-        
         let reason: DisconnectReason
         if let urlError = error as? URLError {
             switch urlError.code {
@@ -174,15 +170,21 @@ public class SSEClient {
         } else {
             reason = .unknown(cause: error)
         }
-        
+
         lock.lock()
         let shouldRetry = reason.isRecoverable && currentRetryAttempt < currentConfig.maxReconnectAttempts
         let attempt = currentRetryAttempt
         lock.unlock()
-        
+
         if shouldRetry {
+            // Recoverable (e.g. the connection was suspended while the app was backgrounded) — retry
+            // silently. Only surface an error to the UI once retries are exhausted or the error is fatal,
+            // so a transient blip doesn't flash an incorrect "offline" state.
             attemptReconnect(currentAttempt: attempt)
         } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.errorHandler?(error)
+            }
             updateState(.disconnected(reason: reason))
         }
     }

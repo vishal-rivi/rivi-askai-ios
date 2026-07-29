@@ -42,7 +42,7 @@ struct ContentView: View {
     init() {
         RiviAskAI.initialize(
             environment: .staging,
-            authToken: "",
+            authToken: "a99e3407013b88bbaf3d9b9b96e046b387288f3d293f66d3705c1a98ebe6f2b8",
             language: .english
         )
     }
@@ -109,7 +109,7 @@ struct ContentView: View {
                 // Reinitialize RiviAskAI with new language
                 RiviAskAI.initialize(
                     environment: .staging,
-                    authToken: "",
+                    authToken: "a99e3407013b88bbaf3d9b9b96e046b387288f3d293f66d3705c1a98ebe6f2b8",
                     language: newValue
                 )
                 
@@ -305,9 +305,13 @@ struct ContentView: View {
                 isPresented: $showAskAISheet,
                 queryType: selectedQueryType,
                 userQuery: userQuery,
+                chips: $filterChips,
                 parameterChangeNotice: parameterChangeNotice,
                 onSubmit: { query in
                     processQuery(query)
+                },
+                onRemoveChip: { _ in
+                    processQuery(filterChips.joined(separator: ", "))
                 },
                 onClear: {
                     filterChips = []

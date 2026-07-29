@@ -9,7 +9,7 @@
 "first_time_banner_cta" = "Let's Go!";
 
 /* RiviAskAISheet */
-"ask_ai_sheet_title" = "Ask AI";
+"ask_ai_sheet_title" = "Smart Sort";
 "ask_ai_sheet_placeholder_hotel" = "e.g. 4 star hotels near the airport with free breakfast";
 "ask_ai_sheet_placeholder_flight" = "e.g. Direct flights that reach before 4PM with meals included";
 "ask_ai_sheet_submit_button" = "Improve Results";
