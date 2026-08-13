@@ -44,6 +44,17 @@ For questions, issues, or feature requests:
 
 ## Changelog
 
+### Version 1.5.0
+
+* Explain-AI auto re-trigger on socket updates: When a consumer is subscribed via `subscribeToEvents` for the same `searchId` that's currently being explained, the SDK now automatically re-fires `performExplainAIRequest` whenever a pushed event carries an entity that differs from the one last explained — so explain-ai reflects chunked/streamed backend results instead of only the initial `/askai` response. Re-fires are debounced (0.4s quiet period, capped at 2s for continuous bursts) and cancel any explain-ai call already in flight, so only the freshest data is ever explained. Fully internal — no changes to `performAskAIRequest`, `subscribeToEvents`, or `RiviAskAIConfiguration.onExplainContent`/`onExplainError` signatures; existing integrations pick up the behavior automatically.
+
+### Version 1.4.0
+
+* RiviAskAISheet — Corner radius 12: Text field border, submit button clip shape, and sheet presentation corner radius (`presentationCornerRadius`) all set to 12 for a consistent rounded look.
+* RiviAskAISheet — Disabled submit button: "Improve Results" button now renders in a gray disabled state when the text field is empty and becomes active once the user types.
+* RiviAskAISheet — Bottom padding: Added bottom padding below the submit button so it respects the sheet's configured bottom inset.
+* RiviInfoBanner — Gradient background: `Configuration` gains an optional `backgroundGradient: LinearGradient?` property. When set it takes priority over `backgroundColor`, enabling gradient fills on the banner. Fully backwards-compatible — existing callers that omit the parameter continue to use the solid color.
+
 ### Version 1.3.0
 
 * New UI Component — AlmatarSmartSortBottomSheet: Alternative bottom sheet with Almatar-styled visuals. Functionally equivalent to RiviAskAISheet (same callbacks, parameter change notice, clear-all confirmation, info tooltip) but renders a centered "Smart Sort" title, white prompt card with the sparkle prompt, in-card "Clear all" action, live `count/limit` counter on the text field, and a pill-shaped "Improve results" CTA. Close (X) and info (i) live in the navigation toolbar so they pick up the system Liquid Glass treatment on iOS 26+ automatically.

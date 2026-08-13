@@ -1659,6 +1659,10 @@ For questions, issues, or feature requests:
 
 ## Changelog
 
+### Version 1.5.0
+
+* Explain-AI auto re-trigger on socket updates: When a consumer is subscribed via `subscribeToEvents` for the same `searchId` that's currently being explained, the SDK now automatically re-fires `performExplainAIRequest` whenever a pushed event carries an entity that differs from the one last explained — so explain-ai reflects chunked/streamed backend results instead of only the initial `/askai` response. Re-fires are debounced (0.4s quiet period, capped at 2s for continuous bursts) and cancel any explain-ai call already in flight, so only the freshest data is ever explained. Fully internal — no changes to `performAskAIRequest`, `subscribeToEvents`, or `RiviAskAIConfiguration.onExplainContent`/`onExplainError` signatures; existing integrations pick up the behavior automatically.
+
 ### Version 1.4.0
 
 * RiviAskAISheet — Corner radius 12: Text field border, submit button clip shape, and sheet presentation corner radius (`presentationCornerRadius`) all set to 12 for a consistent rounded look.

@@ -42,7 +42,7 @@ struct ContentView: View {
     init() {
         RiviAskAI.initialize(
             environment: .staging,
-            authToken: "a99e3407013b88bbaf3d9b9b96e046b387288f3d293f66d3705c1a98ebe6f2b8",
+            authToken: "",
             language: .english
         )
     }
@@ -109,7 +109,7 @@ struct ContentView: View {
                 // Reinitialize RiviAskAI with new language
                 RiviAskAI.initialize(
                     environment: .staging,
-                    authToken: "a99e3407013b88bbaf3d9b9b96e046b387288f3d293f66d3705c1a98ebe6f2b8",
+                    authToken: "",
                     language: newValue
                 )
                 
@@ -169,7 +169,7 @@ struct ContentView: View {
             }
             
             // 2. Show the info banner (shimmer while a request is in flight)
-            if !filterChips.isEmpty || isProcessing {
+            if !filterChips.isEmpty || isProcessing || !(explainContent?.isEmpty ?? true) {
                 VStack(alignment: .leading) {
                     Text("2. RiviInfoBanner:")
                         .font(.subheadline)

@@ -61,6 +61,22 @@ public class AskAIService: AskAIServiceProtocol {
         self.logger = logger ?? RiviAskAIConfiguration.shared.resolvedLogger
         self.sseClient = SSEClient()
     }
+
+    // MARK: - Explain-ai auto re-trigger on socket updates
+    // All of this state is only ever read/written on the main thread/actor (see the
+    // `DispatchQueue.main.async` / `MainActor.run` hops below) so it doesn't need its own lock.
+    private var activeExplainSearchId: String?
+    private var activeExplainRequest: AskAIRequest?
+    private var activeExplainEntity: [String: Any]?
+    private var lastExplainChunkSignature: String?
+    private var explainTask: Task<Void, Never>?
+    private var explainDebounceTask: Task<Void, Never>?
+    private var explainBurstStartedAt: Date?
+
+    /// Quiet period after the last socket update before re-firing explain-ai.
+    private let explainDebounceInterval: TimeInterval = 0.4
+    /// Upper bound on how long a continuous burst of updates can delay a re-fire.
+    private let explainDebounceCeiling: TimeInterval = 2.0
     
     /// Perform a sort-best request (without query)
     /// - Parameter request: The request parameters
@@ -529,10 +545,34 @@ public class AskAIService: AskAIServiceProtocol {
     /// Kick off an explain-ai stream in the background and forward partial content to the
     /// `onExplainContent` / `onExplainError` handlers configured on `RiviAskAIConfiguration`.
     /// Fires whenever a handler is registered — covers both "Improve Results" and "Sort Best".
+    ///
+    /// This also arms the socket-driven re-trigger: once this fires, any subsequent, distinct
+    /// event on `subscribeToEvents` for the same `searchId` will re-fire explain-ai automatically
+    /// with this same entity/context (see `handleSocketEventForExplainRetrigger`).
     private func autoFireExplainAI(request: AskAIRequest, entity: [String: Any]) {
         let config = RiviAskAIConfiguration.shared
         guard config.onExplainContent != nil || config.onExplainError != nil else { return }
 
+        // All mutable explain-retrigger state is only touched on the main thread — hop here so
+        // it can't race with `handleSocketEventForExplainRetrigger`, which SSEClient always
+        // invokes on the main queue.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.activeExplainSearchId = request.searchId
+            self.activeExplainRequest = request
+            self.activeExplainEntity = entity
+            self.lastExplainChunkSignature = nil
+            self.explainBurstStartedAt = nil
+            self.explainDebounceTask?.cancel()
+            self.explainDebounceTask = nil
+
+            self.fireExplainAI(request: request, entity: entity)
+        }
+    }
+
+    /// Actually starts the explain-ai stream, cancelling any explain-ai call already in flight
+    /// so a newer chunk always wins over a stale one. Must be called on the main thread.
+    private func fireExplainAI(request: AskAIRequest, entity: [String: Any]) {
         // For flights, the AskAI request reuses `checkin` as the departure date — mirror that
         // mapping so explain-ai sees the right `departure_date` field.
         let departureDate = request.queryType == .flight ? request.checkin : nil
@@ -554,7 +594,8 @@ public class AskAIService: AskAIServiceProtocol {
             origin: request.origin
         )
 
-        Task { [weak self] in
+        explainTask?.cancel()
+        explainTask = Task { [weak self] in
             guard let self else { return }
             do {
                 _ = try await self.performExplainAIRequest(
@@ -569,6 +610,9 @@ public class AskAIService: AskAIServiceProtocol {
                     }
                 )
             } catch {
+                // A cancellation here means a newer chunk superseded this call — not a real
+                // failure, so don't surface it to the consumer's error handler.
+                if Task.isCancelled { return }
                 Logger.logError(message: "Auto explain-ai request failed", error: error)
                 self.logger.error(error)
                 if let handler = RiviAskAIConfiguration.shared.onExplainError {
@@ -576,6 +620,68 @@ public class AskAIService: AskAIServiceProtocol {
                 }
             }
         }
+    }
+
+    /// Called on the main thread with every raw event delivered by `subscribeToEvents`. The
+    /// `/askai/subscribe` channel pushes *sorted results*, not `entities` — explain-ai's request
+    /// body only ever needs `search_id` + the original entity to get a fresh explanation of
+    /// whatever the backend currently has for that search, so we don't need to (and can't) parse
+    /// a new entity out of these frames. If the search matches the one currently being explained
+    /// and the raw chunk actually differs from the last one we reacted to, re-fire explain-ai
+    /// with the same entity/context so it picks up the latest ranking.
+    private func handleSocketEventForExplainRetrigger(searchId: String, eventData: String) {
+        guard searchId == activeExplainSearchId,
+              let activeRequest = activeExplainRequest,
+              let activeEntity = activeExplainEntity
+        else { return }
+
+        let chunk = eventData.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !chunk.isEmpty, chunk != lastExplainChunkSignature else { return }
+        lastExplainChunkSignature = chunk
+
+        scheduleDebouncedExplainRefire(request: activeRequest, entity: activeEntity)
+    }
+
+    /// Debounces rapid bursts of socket updates so we don't fire a fresh explain-ai request per
+    /// chunk, while guaranteeing a fire at least every `explainDebounceCeiling` seconds so a
+    /// continuous burst can't suppress the re-fire indefinitely. Must be called on the main thread.
+    private func scheduleDebouncedExplainRefire(request: AskAIRequest, entity: [String: Any]) {
+        let now = Date()
+        let burstStart = explainBurstStartedAt ?? now
+        if explainBurstStartedAt == nil {
+            explainBurstStartedAt = now
+        }
+
+        explainDebounceTask?.cancel()
+
+        if now.timeIntervalSince(burstStart) >= explainDebounceCeiling {
+            explainDebounceTask = nil
+            explainBurstStartedAt = nil
+            fireExplainAI(request: request, entity: entity)
+            return
+        }
+
+        explainDebounceTask = Task { [weak self] in
+            guard let self else { return }
+            try? await Task.sleep(for: .seconds(self.explainDebounceInterval))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                guard self.activeExplainSearchId == request.searchId else { return }
+                self.explainBurstStartedAt = nil
+                self.fireExplainAI(request: request, entity: entity)
+            }
+        }
+    }
+
+    /// Cancels any pending explain-retrigger work and clears the tracked search context.
+    private func clearExplainRetriggerState() {
+        explainDebounceTask?.cancel()
+        explainDebounceTask = nil
+        activeExplainSearchId = nil
+        activeExplainRequest = nil
+        activeExplainEntity = nil
+        lastExplainChunkSignature = nil
+        explainBurstStartedAt = nil
     }
 
     /// Subscribe to SSE events for a search ID
@@ -611,12 +717,13 @@ public class AskAIService: AskAIServiceProtocol {
         
         sseClient?.connect(to: url, config: config , request: request, onStateChange: { state in
             onState?(state)
-        }, onEvent: { eventData in
+        }, onEvent: { [weak self] eventData in
             Logger.logResponse(
                 url: url,
                 statusCode: 200,
                 data: eventData.data(using: .utf8) ?? Data()
             )
+            self?.handleSocketEventForExplainRetrigger(searchId: searchId, eventData: eventData)
             onEvent(eventData)
         }, onError: { error in
             Logger.logError(message: "SSE connection error", error: error)
@@ -624,12 +731,15 @@ public class AskAIService: AskAIServiceProtocol {
             onError(error)
         })
     }
-    
+
     /// Disconnect from the SSE connection
     public func disconnect() {
         logger.debug("Disconnecting SSE client")
         Logger.logRequest(url: URL(string: "\(RiviAskAIConfiguration.shared.baseURL)/disconnect")!, params: ["message": "Disconnecting SSE client"])
         sseClient?.disconnect()
+        DispatchQueue.main.async { [weak self] in
+            self?.clearExplainRetriggerState()
+        }
     }
     
     deinit {
