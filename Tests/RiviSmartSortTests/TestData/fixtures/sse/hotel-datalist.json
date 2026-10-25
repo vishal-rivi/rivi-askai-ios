@@ -1,0 +1,20 @@
+{
+  "name": "hotel-datalist",
+  "stream": "ranking",
+  "product": "hotel",
+  "connections": [
+    {
+      "text": "data: 1{\"requestId\":\"req-3\"}\ndata: 2{\"dataList\":[{\"id\":\"H-9\",\"name\":\"Hotel Nine\",\"price\":420},{\"id\":\"H-3\",\"name\":\"Hotel Three\",\"price\":510}]}\n",
+      "end": "close"
+    }
+  ],
+  "frames": [
+    { "requestId": "req-3" },
+    {
+      "dataList": [
+        { "id": "H-9", "name": "Hotel Nine", "price": 420 },
+        { "id": "H-3", "name": "Hotel Three", "price": 510 }
+      ]
+    }
+  ]
+}

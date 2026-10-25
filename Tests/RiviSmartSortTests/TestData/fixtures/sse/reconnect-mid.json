@@ -1,0 +1,19 @@
+{
+  "name": "reconnect-mid",
+  "stream": "ranking",
+  "product": "flight",
+  "connections": [
+    {
+      "text": "data: 1{\"data\":{\"itineraries\":{\"IT-1\":{},\"IT-2\":{}}}}\n",
+      "end": "error"
+    },
+    {
+      "text": "data: 1{\"data\":{\"itineraries\":{\"IT-1\":{},\"IT-2\":{}}}}\ndata: 2{\"data\":{\"itineraries\":{\"IT-2\":{},\"IT-1\":{}}}}\n",
+      "end": "hold"
+    }
+  ],
+  "frames": [
+    { "data": { "itineraries": { "IT-1": {}, "IT-2": {} } } },
+    { "data": { "itineraries": { "IT-2": {}, "IT-1": {} } } }
+  ]
+}

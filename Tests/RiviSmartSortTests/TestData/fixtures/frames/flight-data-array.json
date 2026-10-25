@@ -1,0 +1,6 @@
+{
+  "data": [
+    { "itineraryId": "pr-105-pr-422", "totalPrice": 412.5, "allPreferencesMet": true },
+    { "itineraryId": "ek-201", "totalPrice": 380, "allPreferencesMet": false }
+  ]
+}

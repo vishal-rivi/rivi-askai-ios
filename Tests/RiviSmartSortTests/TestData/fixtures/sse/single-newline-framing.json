@@ -1,0 +1,17 @@
+{
+  "name": "single-newline-framing",
+  "stream": "ranking",
+  "product": "flight",
+  "connections": [
+    {
+      "text": ": keepalive\r\nevent: message\r\ndata: {\"requestId\":\"req-2\"}\r\ndata: {\"data\":{\"itineraries\":{\"IT-1\":{},\"IT-2\":{}}}}\r\n{\"data\":{\"itineraries\":{\"IT-2\":{},\"IT-1\":{}}}}\r\n",
+      "splitAt": [12, 57],
+      "end": "hold"
+    }
+  ],
+  "frames": [
+    { "requestId": "req-2" },
+    { "data": { "itineraries": { "IT-1": {}, "IT-2": {} } } },
+    { "data": { "itineraries": { "IT-2": {}, "IT-1": {} } } }
+  ]
+}

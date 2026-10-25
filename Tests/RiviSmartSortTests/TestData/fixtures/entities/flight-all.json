@@ -1,0 +1,23 @@
+{
+  "preferred_airlines": ["Emirates", "Qatar Airways"],
+  "not_preferred_airlines": ["Ryanair"],
+  "trip_duration": "under 10 hours",
+  "preferred_departure_time": ["morning", "afternoon"],
+  "preferred_arrival_time": ["before noon"],
+  "preferred_return_time": ["evening"],
+  "stops_preference": ["0", "1", "2", "3"],
+  "preferred_flight_duration": "under 8 hours",
+  "preferred_layover_airport_or_city": ["DXB"],
+  "not_preferred_layover_airport": ["LHR"],
+  "preferred_layover_duration": "under 2 hours",
+  "checked_baggage_weight_preference": ["23kg"],
+  "flight_budget": 500,
+  "in_policy_only": true,
+  "flight_amenities": ["WiFi"],
+  "preferred_departure_airport": ["JFK", "EWR"],
+  "preferred_arrival_airport": ["DXB"],
+  "not_preferred_departure_airport": ["LGA"],
+  "not_preferred_arrival_airport": ["SHJ"],
+  "other_flight_preferences": ["window seat"],
+  "preferred_baggage_preference": "carry-on"
+}

@@ -1,0 +1,16 @@
+{
+  "data": {
+    "onwardLegs": [
+      {
+        "legId": "MS648ECONOMY",
+        "recommendationTagList": ["Fastest"],
+        "recommendationTag": "Fastest"
+      },
+      { "legId": "J9222_J9733_EE", "recommendationTagList": [], "allPreferencesMet": false }
+    ],
+    "returnLegs": [
+      { "legId": "MS650*Return", "recommendationTagList": ["Cheapest"] },
+      { "recommendationTagList": ["Recommended"] }
+    ]
+  }
+}

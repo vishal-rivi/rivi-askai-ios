@@ -1,0 +1,2341 @@
+{
+  "contractVersion": 2,
+  "cases": [
+    {
+      "name": "rule 1+14: an empty tenant pool holds an ask; the first chunk fires it once",
+      "rules": [1, 14],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "pool": { "size": 0, "complete": false },
+      "setup": [],
+      "inputs": [
+        { "kind": "Ask", "text": "non-stop" },
+        { "kind": "PoolChanged", "pool": { "size": 20, "complete": false } }
+      ],
+      "expect": {
+        "state": { "pendingAsk": null, "query": "non-stop", "epoch": 2, "bannerMode": "loading" },
+        "commands": [
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          { "kind": "Fetch", "epoch": 2, "request": { "kind": "ask", "query": "non-stop" } }
+        ]
+      }
+    },
+    {
+      "name": "rule 14: an ask on an empty pool shows loading, keeps the text and fetches nothing",
+      "rules": [14],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "pool": { "size": 0, "complete": false },
+      "setup": [],
+      "inputs": [{ "kind": "Ask", "text": "non-stop" }],
+      "expect": {
+        "state": { "pendingAsk": "non-stop", "query": "", "bannerMode": "loading" },
+        "commands": [],
+        "select": { "inputValue": { "text": "non-stop", "chips": [] } }
+      }
+    },
+    {
+      "name": "rule 1: three chunks before the coalesce timer give one round",
+      "rules": [1],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "pool": { "size": 10, "complete": false },
+      "setup": [],
+      "inputs": [
+        { "kind": "PoolChanged", "pool": { "size": 20, "complete": false } },
+        { "kind": "PoolChanged", "pool": { "size": 30, "complete": false } },
+        { "kind": "PoolChanged", "pool": { "size": 40, "complete": false } },
+        { "kind": "TimerFired", "timer": "chunk", "epoch": 1 }
+      ],
+      "expect": {
+        "state": { "epoch": 2, "pool": { "size": 40, "complete": false } },
+        "commands": [
+          { "kind": "StartTimer", "timer": "chunk", "ms": 300, "epoch": 1 },
+          { "kind": "StartTimer", "timer": "chunk", "ms": 300, "epoch": 1 },
+          { "kind": "StartTimer", "timer": "chunk", "ms": 300, "epoch": 1 },
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          { "kind": "Fetch", "epoch": 2, "request": { "kind": "sortBest" } }
+        ]
+      }
+    },
+    {
+      "name": "rule 2: a query over active filters keeps them and sends them with the ask",
+      "rules": [2],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [{ "kind": "SetFilters", "filters": { "stops": [0] } }],
+      "inputs": [{ "kind": "Ask", "text": "non-stop" }],
+      "expect": {
+        "state": { "filters": { "stops": [0] }, "query": "non-stop" },
+        "commands": [
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          {
+            "kind": "Fetch",
+            "epoch": 3,
+            "request": { "kind": "ask", "query": "non-stop", "filters": { "stops": [0] } }
+          }
+        ]
+      }
+    },
+    {
+      "name": "rule 3: filters with no query re-rank Best with them",
+      "rules": [3],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [],
+      "inputs": [{ "kind": "SetFilters", "filters": { "maxPrice": 500 } }],
+      "expect": {
+        "state": { "filters": { "maxPrice": 500 }, "query": "", "rankingStatus": "provisional" },
+        "commands": [
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          {
+            "kind": "Fetch",
+            "epoch": 2,
+            "request": { "kind": "sortBest", "filters": { "maxPrice": 500 } }
+          }
+        ]
+      }
+    },
+    {
+      "name": "rule 3: filters over an active query re-rank it with the query and chips kept",
+      "rules": [3],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        }
+      ],
+      "inputs": [{ "kind": "SetFilters", "filters": { "maxPrice": 500 } }],
+      "expect": {
+        "state": {
+          "query": "non-stop",
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "filters": { "maxPrice": 500 },
+          "rankingStatus": "provisional"
+        },
+        "commands": [
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          {
+            "kind": "Fetch",
+            "epoch": 3,
+            "request": { "kind": "ask", "query": "non-stop", "filters": { "maxPrice": 500 } }
+          }
+        ]
+      }
+    },
+    {
+      "name": "rule 3: filters over a held ask keep it held",
+      "rules": [3],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "pool": { "size": 0, "complete": false },
+      "setup": [{ "kind": "Ask", "text": "non-stop" }],
+      "inputs": [{ "kind": "SetFilters", "filters": { "maxPrice": 500 } }],
+      "expect": {
+        "state": {
+          "pendingAsk": "non-stop",
+          "filters": { "maxPrice": 500 },
+          "bannerMode": "loading"
+        },
+        "commands": []
+      }
+    },
+    {
+      "name": "rule 3: equal filters are not a change",
+      "rules": [3],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [{ "kind": "SetFilters", "filters": { "stops": [0], "maxPrice": 500 } }],
+      "inputs": [{ "kind": "SetFilters", "filters": { "maxPrice": 500, "stops": [0] } }],
+      "expect": { "state": { "epoch": 2 }, "commands": [] }
+    },
+    {
+      "name": "rule 3: clearing filters re-ranks without them",
+      "rules": [3],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [{ "kind": "SetFilters", "filters": { "maxPrice": 500 } }],
+      "inputs": [{ "kind": "SetFilters", "filters": null }],
+      "expect": {
+        "state": { "filters": null },
+        "commands": [
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          { "kind": "Fetch", "epoch": 3, "request": { "kind": "sortBest" } }
+        ]
+      }
+    },
+    {
+      "name": "rule 4: removing one of several chips re-asks with the rest",
+      "rules": [4],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop emirates" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"], "preferred_airlines": ["Emirates"] },
+          "chips": [
+            { "id": "c-stops", "label": "Non-stop", "group": "stops_preference" },
+            { "id": "c-ek", "label": "Emirates", "group": "preferred_airlines" }
+          ],
+          "notice": null
+        }
+      ],
+      "inputs": [{ "kind": "RemoveChip", "id": "c-ek" }],
+      "expect": {
+        "state": {
+          "query": "Non-stop",
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "entities": {},
+          "bannerMode": "loading"
+        },
+        "commands": [
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          { "kind": "Fetch", "epoch": 3, "request": { "kind": "ask", "query": "Non-stop" } }
+        ]
+      }
+    },
+    {
+      "name": "rule 4+5: removing the last chip is exactly a clear-all",
+      "rules": [4, 5],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        }
+      ],
+      "inputs": [{ "kind": "RemoveChip", "id": "c-stops" }],
+      "expect": {
+        "state": { "query": "", "chips": [], "bannerMode": "hidden" },
+        "commands": [
+          { "kind": "RankingCleared" },
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          { "kind": "Fetch", "epoch": 3, "request": { "kind": "sortBest" } }
+        ]
+      }
+    },
+    {
+      "name": "rule 5: clear-all clears query, chips, entities, notice, explanation and ranking at once",
+      "rules": [5],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": "Dates changed"
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 },
+        { "kind": "ExplainFrame", "epoch": 2, "text": "Ranked for non-stop." }
+      ],
+      "inputs": [{ "kind": "ClearAll" }],
+      "expect": {
+        "state": {
+          "query": "",
+          "chips": [],
+          "entities": {},
+          "notice": null,
+          "explanation": "",
+          "explanationEpoch": null,
+          "bannerMode": "hidden",
+          "ranking": [],
+          "epoch": 3
+        },
+        "commands": [
+          { "kind": "RankingCleared" },
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          { "kind": "Fetch", "epoch": 3, "request": { "kind": "sortBest" } }
+        ]
+      }
+    },
+    {
+      "name": "rule 6: off Best the ranking selector hands ordering back",
+      "rules": [6],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        {
+          "kind": "RankingFrame",
+          "epoch": 1,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        }
+      ],
+      "inputs": [{ "kind": "SetSort", "sort": "other" }],
+      "expect": { "state": { "sort": "other" }, "commands": [], "select": { "ranking": [] } }
+    },
+    {
+      "name": "rule 6+15: returning to Best restores the ranking without a fetch",
+      "rules": [6, 15],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        {
+          "kind": "RankingFrame",
+          "epoch": 1,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "SetSort", "sort": "other" }
+      ],
+      "inputs": [{ "kind": "SetSort", "sort": "best" }],
+      "expect": {
+        "state": { "sort": "best" },
+        "commands": [],
+        "select": {
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rule 7+16: the return leg hides banner and chips and keeps the return ranking",
+      "rules": [7, 16],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "round",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 },
+        "returnDate": "2026-11-08"
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            { "id": "o1", "scope": "onward", "rank": 0, "matchesAllPreferences": true, "tags": [] },
+            { "id": "o2", "scope": "onward", "rank": 1, "matchesAllPreferences": true, "tags": [] },
+            { "id": "t1", "scope": "return", "rank": 0, "matchesAllPreferences": true, "tags": [] }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 },
+        { "kind": "ExplainFrame", "epoch": 2, "text": "Ranked for non-stop." }
+      ],
+      "inputs": [{ "kind": "SetStage", "stage": "return" }],
+      "expect": {
+        "state": { "available": false, "stage": "return" },
+        "commands": [],
+        "select": {
+          "bannerVisible": false,
+          "chipsVisible": false,
+          "ranking": [
+            { "id": "t1", "scope": "return", "rank": 0, "matchesAllPreferences": true, "tags": [] }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rule 7: going back to the onward leg brings the banner back",
+      "rules": [7],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "round",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 },
+        "returnDate": "2026-11-08"
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 },
+        { "kind": "ExplainFrame", "epoch": 2, "text": "Ranked for non-stop." },
+        { "kind": "SetStage", "stage": "return" }
+      ],
+      "inputs": [{ "kind": "SetStage", "stage": "onward" }],
+      "expect": { "commands": [], "select": { "bannerVisible": true, "banner": "explanation" } }
+    },
+    {
+      "name": "rule 8+12: the query and chips restore from state; there is no visibility input",
+      "rules": [8, 12],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [{ "kind": "Ask", "text": "non-stop" }],
+      "inputs": [
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "query": "non-stop",
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }]
+        },
+        "select": {
+          "inputValue": {
+            "text": "non-stop",
+            "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }]
+          },
+          "chipsVisible": true
+        }
+      }
+    },
+    {
+      "name": "rule 9: a new searchId resets the session, keeps tenant facts and re-ranks",
+      "rules": [9],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "SetSort", "sort": "other" },
+        { "kind": "SetSort", "sort": "best" },
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "SetVisible", "ids": ["r1"] }
+      ],
+      "inputs": [
+        {
+          "kind": "SetSearch",
+          "search": {
+            "product": "flight",
+            "searchId": "s2",
+            "tripType": "oneway",
+            "origin": "RUH",
+            "destination": "DXB",
+            "departureDate": "2026-11-01",
+            "pax": { "adults": 1, "children": 0, "infants": 0 }
+          }
+        }
+      ],
+      "expect": {
+        "state": {
+          "query": "",
+          "chips": [],
+          "ranking": [],
+          "bannerMode": "hidden",
+          "visible": null,
+          "sort": "best",
+          "pool": "rivi",
+          "epoch": 3,
+          "rankingStatus": "provisional"
+        },
+        "commands": [
+          { "kind": "CancelTimer", "timer": "all" },
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          { "kind": "Fetch", "epoch": 3, "request": { "kind": "sortBest" } }
+        ]
+      }
+    },
+    {
+      "name": "rule 9: a new product resets the session",
+      "rules": [9],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        }
+      ],
+      "inputs": [
+        {
+          "kind": "SetSearch",
+          "search": {
+            "product": "hotel",
+            "searchId": "h1",
+            "tripType": "oneway",
+            "destination": "DXB",
+            "checkin": "2026-11-01",
+            "checkout": "2026-11-03",
+            "rooms": 1,
+            "pax": { "adults": 2, "children": 0 }
+          }
+        }
+      ],
+      "expect": {
+        "state": {
+          "query": "",
+          "chips": [],
+          "entities": {},
+          "search": {
+            "product": "hotel",
+            "searchId": "h1",
+            "tripType": "oneway",
+            "destination": "DXB",
+            "checkin": "2026-11-01",
+            "checkout": "2026-11-03",
+            "rooms": 1,
+            "pax": { "adults": 2, "children": 0 }
+          },
+          "available": true,
+          "epoch": 3
+        }
+      }
+    },
+    {
+      "name": "rule 9: the same search again changes nothing",
+      "rules": [9],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        }
+      ],
+      "inputs": [
+        {
+          "kind": "SetSearch",
+          "search": {
+            "product": "flight",
+            "searchId": "s1",
+            "tripType": "oneway",
+            "origin": "RUH",
+            "destination": "DXB",
+            "departureDate": "2026-11-01",
+            "pax": { "adults": 1, "children": 0, "infants": 0 }
+          }
+        }
+      ],
+      "expect": {
+        "state": {
+          "query": "non-stop",
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "epoch": 2
+        },
+        "commands": []
+      }
+    },
+    {
+      "name": "rule 9: a frame from the previous search never reaches the new one",
+      "rules": [9],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "SetSearch",
+          "search": {
+            "product": "flight",
+            "searchId": "s2",
+            "tripType": "oneway",
+            "origin": "RUH",
+            "destination": "DXB",
+            "departureDate": "2026-11-01",
+            "pax": { "adults": 1, "children": 0, "infants": 0 }
+          }
+        }
+      ],
+      "inputs": [
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        }
+      ],
+      "expect": { "state": { "ranking": [], "epoch": 3 }, "commands": [] }
+    },
+    {
+      "name": "rule 9: a first search on a rivi pool starts sort-best",
+      "rules": [9],
+      "setup": [],
+      "inputs": [
+        {
+          "kind": "SetSearch",
+          "search": {
+            "product": "flight",
+            "searchId": "s1",
+            "tripType": "oneway",
+            "origin": "RUH",
+            "destination": "DXB",
+            "departureDate": "2026-11-01",
+            "pax": { "adults": 1, "children": 0, "infants": 0 }
+          }
+        }
+      ],
+      "expect": {
+        "state": { "epoch": 1, "available": true, "rankingStatus": "provisional" },
+        "commands": [
+          { "kind": "CancelTimer", "timer": "all" },
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          { "kind": "Fetch", "epoch": 1, "request": { "kind": "sortBest" } }
+        ]
+      }
+    },
+    {
+      "name": "rule 10: leaving Best with an active query waits for confirmation",
+      "rules": [10],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [{ "kind": "Ask", "text": "non-stop" }],
+      "inputs": [{ "kind": "SetSort", "sort": "other" }],
+      "expect": {
+        "state": { "sort": "best", "pendingConfirm": "other" },
+        "commands": [{ "kind": "ConfirmSortChange", "sort": "other" }]
+      }
+    },
+    {
+      "name": "rule 10: declining keeps the query and tells the tenant to switch back",
+      "rules": [10],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        { "kind": "SetSort", "sort": "other" }
+      ],
+      "inputs": [{ "kind": "ConfirmResolved", "accepted": false }],
+      "expect": {
+        "state": { "sort": "best", "pendingConfirm": null, "query": "non-stop" },
+        "commands": [{ "kind": "SortChanged", "sort": "best" }]
+      }
+    },
+    {
+      "name": "rule 10: accepting applies the sort and clears the query",
+      "rules": [10],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        { "kind": "SetSort", "sort": "other" }
+      ],
+      "inputs": [{ "kind": "ConfirmResolved", "accepted": true }],
+      "expect": {
+        "state": { "sort": "other", "pendingConfirm": null, "query": "" },
+        "commands": [
+          { "kind": "RankingCleared" },
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          { "kind": "Fetch", "epoch": 3, "request": { "kind": "sortBest" } }
+        ],
+        "select": { "ranking": [] }
+      }
+    },
+    {
+      "name": "rule 11+17: an explain that ends without text over a partial match falls back",
+      "rules": [11, 17],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": false,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 }
+      ],
+      "inputs": [{ "kind": "ExplainEnd", "epoch": 2 }],
+      "expect": {
+        "state": { "bannerMode": "fallback", "explanation": "" },
+        "commands": [],
+        "select": { "banner": "fallback" }
+      }
+    },
+    {
+      "name": "rule 11+17: a later frame of full matches turns the fallback off",
+      "rules": [11, 17],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": false,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 },
+        { "kind": "ExplainEnd", "epoch": 2 }
+      ],
+      "inputs": [
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "state": { "bannerMode": "hidden" },
+        "commands": [{ "kind": "StartTimer", "timer": "settle", "ms": 800, "epoch": 2 }]
+      }
+    },
+    {
+      "name": "rule 17: explanation text wins; the end of the stream keeps it",
+      "rules": [17],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": false,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 },
+        { "kind": "ExplainFrame", "epoch": 2, "text": "Ranked for non-stop." }
+      ],
+      "inputs": [{ "kind": "ExplainEnd", "epoch": 2 }],
+      "expect": {
+        "state": { "bannerMode": "explanation", "explanation": "Ranked for non-stop." },
+        "select": { "banner": "explanation" }
+      }
+    },
+    {
+      "name": "rule 13: entities without chips still start the explain",
+      "rules": [13],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "somewhere quiet" },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        }
+      ],
+      "inputs": [
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "other_flight_preferences": ["quiet"] },
+          "chips": [],
+          "notice": null
+        }
+      ],
+      "expect": {
+        "state": { "chips": [], "bannerMode": "loading" },
+        "commands": [{ "kind": "StartTimer", "timer": "explain", "ms": 500, "epoch": 2 }]
+      }
+    },
+    {
+      "name": "rule 13: no entities hides the banner",
+      "rules": [13],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "hello" },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        }
+      ],
+      "inputs": [
+        { "kind": "AskResponse", "epoch": 2, "entities": {}, "chips": [], "notice": null }
+      ],
+      "expect": { "state": { "bannerMode": "hidden" }, "commands": [] }
+    },
+    {
+      "name": "rule 13: no explain without a ranking frame in the current epoch",
+      "rules": [13],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [{ "kind": "Ask", "text": "non-stop" }],
+      "inputs": [
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 }
+      ],
+      "expect": { "state": { "explainedEpoch": null }, "commands": [] }
+    },
+    {
+      "name": "rule 13: the explain timer fetches once per epoch",
+      "rules": [13],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        }
+      ],
+      "inputs": [
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 }
+      ],
+      "expect": {
+        "state": { "explainedEpoch": 2 },
+        "commands": [
+          { "kind": "CancelInFlight", "scope": "explain" },
+          {
+            "kind": "Fetch",
+            "epoch": 2,
+            "request": {
+              "kind": "explain",
+              "query": "non-stop",
+              "entities": { "stops_preference": ["0"] }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "rule 16: multi-city never ranks and never asks",
+      "rules": [16],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "multicity",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [],
+      "inputs": [{ "kind": "Ask", "text": "non-stop" }],
+      "expect": {
+        "state": { "available": false, "query": "", "rankingStatus": "none" },
+        "commands": []
+      }
+    },
+    {
+      "name": "R4: asking from another sort tab switches the tenant to Best",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [{ "kind": "SetSort", "sort": "other" }],
+      "inputs": [{ "kind": "Ask", "text": "non-stop" }],
+      "expect": {
+        "state": { "sort": "best", "query": "non-stop" },
+        "commands": [
+          { "kind": "SortChanged", "sort": "best" },
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          { "kind": "Fetch", "epoch": 2, "request": { "kind": "ask", "query": "non-stop" } }
+        ]
+      }
+    },
+    {
+      "name": "epoch: a stale ask response from the previous round is dropped",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        { "kind": "Ask", "text": "morning" }
+      ],
+      "inputs": [
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        }
+      ],
+      "expect": { "state": { "chips": [], "entities": {}, "epoch": 3 }, "commands": [] }
+    },
+    {
+      "name": "chunks: a chunk during an explain cancels it through the new round",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "pool": { "size": 10, "complete": false },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 }
+      ],
+      "inputs": [
+        { "kind": "PoolChanged", "pool": { "size": 20, "complete": false } },
+        { "kind": "TimerFired", "timer": "chunk", "epoch": 2 }
+      ],
+      "expect": {
+        "state": { "epoch": 3, "bannerMode": "loading", "explainedEpoch": null },
+        "commands": [
+          { "kind": "StartTimer", "timer": "chunk", "ms": 300, "epoch": 2 },
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          { "kind": "Fetch", "epoch": 3, "request": { "kind": "ask", "query": "non-stop" } }
+        ]
+      }
+    },
+    {
+      "name": "chunks: while unavailable a chunk updates the pool but starts nothing",
+      "rules": [16],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "round",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 },
+        "returnDate": "2026-11-08"
+      },
+      "pool": { "size": 10, "complete": false },
+      "setup": [{ "kind": "SetStage", "stage": "return" }],
+      "inputs": [{ "kind": "PoolChanged", "pool": { "size": 20, "complete": false } }],
+      "expect": {
+        "state": { "pool": { "size": 20, "complete": false }, "epoch": 1 },
+        "commands": []
+      }
+    },
+    {
+      "name": "settle: the ranking is final only after the pool completes and settles",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "pool": { "size": 10, "complete": false },
+      "setup": [],
+      "inputs": [
+        {
+          "kind": "RankingFrame",
+          "epoch": 1,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "PoolChanged", "pool": { "size": 10, "complete": true } },
+        { "kind": "TimerFired", "timer": "settle", "epoch": 1 }
+      ],
+      "expect": {
+        "state": { "rankingStatus": "final" },
+        "commands": [{ "kind": "StartTimer", "timer": "settle", "ms": 800, "epoch": 1 }]
+      }
+    },
+    {
+      "name": "settle: a rivi pool settles after each frame",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [],
+      "inputs": [
+        {
+          "kind": "RankingFrame",
+          "epoch": 1,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "settle", "epoch": 1 }
+      ],
+      "expect": {
+        "state": { "rankingStatus": "final" },
+        "commands": [{ "kind": "StartTimer", "timer": "settle", "ms": 800, "epoch": 1 }]
+      }
+    },
+    {
+      "name": "failure: a failed ask hides the banner; retry re-asks the same query",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [{ "kind": "Ask", "text": "non-stop" }],
+      "inputs": [
+        {
+          "kind": "Failed",
+          "epoch": 2,
+          "error": { "kind": "network", "message": "offline", "retryable": true }
+        },
+        { "kind": "Retry" }
+      ],
+      "expect": {
+        "state": { "error": null, "bannerMode": "loading", "epoch": 3, "query": "non-stop" },
+        "commands": [
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "explain" },
+          { "kind": "CancelTimer", "timer": "settle" },
+          { "kind": "Fetch", "epoch": 3, "request": { "kind": "ask", "query": "non-stop" } }
+        ]
+      }
+    },
+    {
+      "name": "failure: an explain failure keeps the last good text",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 },
+        { "kind": "ExplainFrame", "epoch": 2, "text": "Ranked for non-stop." }
+      ],
+      "inputs": [
+        {
+          "kind": "Failed",
+          "epoch": 2,
+          "error": { "kind": "stream", "message": "dropped", "retryable": true }
+        }
+      ],
+      "expect": {
+        "state": { "bannerMode": "explanation", "explanation": "Ranked for non-stop." },
+        "select": { "banner": "explanation" }
+      }
+    },
+    {
+      "name": "failure: dismissing the error clears only the error",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "Failed",
+          "epoch": 2,
+          "error": { "kind": "server", "message": "500", "retryable": true }
+        }
+      ],
+      "inputs": [{ "kind": "DismissError" }],
+      "expect": { "state": { "error": null, "query": "non-stop", "epoch": 2 }, "commands": [] }
+    },
+    {
+      "name": "notice: the parameter-change notice is kept with chips and dropped without",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [{ "kind": "Ask", "text": "non-stop" }],
+      "inputs": [
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": "Dates changed"
+        }
+      ],
+      "expect": { "state": { "notice": "Dates changed" } }
+    },
+    {
+      "name": "notice: an ask response with no chips clears the notice",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [{ "kind": "Ask", "text": "non-stop" }],
+      "inputs": [
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "other_flight_preferences": ["quiet"] },
+          "chips": [],
+          "notice": "Dates changed"
+        }
+      ],
+      "expect": { "state": { "notice": null } }
+    },
+    {
+      "name": "hotel: hotel entries rank on the onward stage",
+      "rules": [],
+      "search": {
+        "product": "hotel",
+        "searchId": "h1",
+        "tripType": "oneway",
+        "destination": "DXB",
+        "checkin": "2026-11-01",
+        "checkout": "2026-11-03",
+        "rooms": 1,
+        "pax": { "adults": 2, "children": 0 }
+      },
+      "setup": [],
+      "inputs": [
+        {
+          "kind": "RankingFrame",
+          "epoch": 1,
+          "ranking": [
+            { "id": "h2", "scope": "hotel", "rank": 1, "matchesAllPreferences": true, "tags": [] },
+            { "id": "h1", "scope": "hotel", "rank": 0, "matchesAllPreferences": true, "tags": [] }
+          ]
+        }
+      ],
+      "expect": {
+        "select": {
+          "ranking": [
+            { "id": "h1", "scope": "hotel", "rank": 0, "matchesAllPreferences": true, "tags": [] },
+            { "id": "h2", "scope": "hotel", "rank": 1, "matchesAllPreferences": true, "tags": [] }
+          ]
+        }
+      }
+    },
+    {
+      "name": "visible: SetVisible stores the ids and never emits commands",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 },
+        { "kind": "ExplainFrame", "epoch": 2, "text": "Ranked for non-stop." }
+      ],
+      "inputs": [{ "kind": "SetVisible", "ids": ["r2"] }],
+      "expect": { "state": { "visible": ["r2"] }, "commands": [] }
+    },
+    {
+      "name": "visible: hidden matches count only full matches in the top 10",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "i0",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            },
+            {
+              "id": "i1",
+              "scope": "itinerary",
+              "rank": 1,
+              "matchesAllPreferences": true,
+              "tags": []
+            },
+            {
+              "id": "i2",
+              "scope": "itinerary",
+              "rank": 2,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i3",
+              "scope": "itinerary",
+              "rank": 3,
+              "matchesAllPreferences": true,
+              "tags": []
+            },
+            {
+              "id": "i4",
+              "scope": "itinerary",
+              "rank": 4,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i5",
+              "scope": "itinerary",
+              "rank": 5,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i6",
+              "scope": "itinerary",
+              "rank": 6,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i7",
+              "scope": "itinerary",
+              "rank": 7,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i8",
+              "scope": "itinerary",
+              "rank": 8,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i9",
+              "scope": "itinerary",
+              "rank": 9,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i10",
+              "scope": "itinerary",
+              "rank": 10,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i11",
+              "scope": "itinerary",
+              "rank": 11,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 },
+        { "kind": "ExplainFrame", "epoch": 2, "text": "Ranked for non-stop." }
+      ],
+      "inputs": [{ "kind": "SetVisible", "ids": ["i1", "i2", "i4"] }],
+      "expect": { "select": { "hiddenMatches": ["i0", "i3"], "banner": "explanation" } }
+    },
+    {
+      "name": "visible: conflict when every visible entry is partial and a hidden one is full",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "i0",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            },
+            {
+              "id": "i1",
+              "scope": "itinerary",
+              "rank": 1,
+              "matchesAllPreferences": true,
+              "tags": []
+            },
+            {
+              "id": "i2",
+              "scope": "itinerary",
+              "rank": 2,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i3",
+              "scope": "itinerary",
+              "rank": 3,
+              "matchesAllPreferences": true,
+              "tags": []
+            },
+            {
+              "id": "i4",
+              "scope": "itinerary",
+              "rank": 4,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i5",
+              "scope": "itinerary",
+              "rank": 5,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i6",
+              "scope": "itinerary",
+              "rank": 6,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i7",
+              "scope": "itinerary",
+              "rank": 7,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i8",
+              "scope": "itinerary",
+              "rank": 8,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i9",
+              "scope": "itinerary",
+              "rank": 9,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i10",
+              "scope": "itinerary",
+              "rank": 10,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i11",
+              "scope": "itinerary",
+              "rank": 11,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 },
+        { "kind": "ExplainFrame", "epoch": 2, "text": "Ranked for non-stop." }
+      ],
+      "inputs": [{ "kind": "SetVisible", "ids": ["i2", "i4"] }],
+      "expect": { "select": { "banner": "conflict" } }
+    },
+    {
+      "name": "visible: no conflict when the only hidden full match is outside the top 10",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "i0",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i1",
+              "scope": "itinerary",
+              "rank": 1,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i2",
+              "scope": "itinerary",
+              "rank": 2,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i3",
+              "scope": "itinerary",
+              "rank": 3,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i4",
+              "scope": "itinerary",
+              "rank": 4,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i5",
+              "scope": "itinerary",
+              "rank": 5,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i6",
+              "scope": "itinerary",
+              "rank": 6,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i7",
+              "scope": "itinerary",
+              "rank": 7,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i8",
+              "scope": "itinerary",
+              "rank": 8,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i9",
+              "scope": "itinerary",
+              "rank": 9,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i10",
+              "scope": "itinerary",
+              "rank": 10,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i11",
+              "scope": "itinerary",
+              "rank": 11,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 },
+        { "kind": "ExplainFrame", "epoch": 2, "text": "Ranked for non-stop." }
+      ],
+      "inputs": [{ "kind": "SetVisible", "ids": ["i2", "i4"] }],
+      "expect": { "select": { "hiddenMatches": [], "banner": "explanation" } }
+    },
+    {
+      "name": "visible: with no visible fact there is no conflict and no hidden note",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "i0",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            },
+            {
+              "id": "i1",
+              "scope": "itinerary",
+              "rank": 1,
+              "matchesAllPreferences": true,
+              "tags": []
+            },
+            {
+              "id": "i2",
+              "scope": "itinerary",
+              "rank": 2,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i3",
+              "scope": "itinerary",
+              "rank": 3,
+              "matchesAllPreferences": true,
+              "tags": []
+            },
+            {
+              "id": "i4",
+              "scope": "itinerary",
+              "rank": 4,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i5",
+              "scope": "itinerary",
+              "rank": 5,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i6",
+              "scope": "itinerary",
+              "rank": 6,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i7",
+              "scope": "itinerary",
+              "rank": 7,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i8",
+              "scope": "itinerary",
+              "rank": 8,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i9",
+              "scope": "itinerary",
+              "rank": 9,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i10",
+              "scope": "itinerary",
+              "rank": 10,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i11",
+              "scope": "itinerary",
+              "rank": 11,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 },
+        { "kind": "ExplainFrame", "epoch": 2, "text": "Ranked for non-stop." }
+      ],
+      "inputs": [],
+      "expect": {
+        "select": {
+          "banner": "explanation",
+          "hiddenMatches": [],
+          "visibleRanking": [
+            {
+              "id": "i0",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            },
+            {
+              "id": "i1",
+              "scope": "itinerary",
+              "rank": 1,
+              "matchesAllPreferences": true,
+              "tags": []
+            },
+            {
+              "id": "i2",
+              "scope": "itinerary",
+              "rank": 2,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i3",
+              "scope": "itinerary",
+              "rank": 3,
+              "matchesAllPreferences": true,
+              "tags": []
+            },
+            {
+              "id": "i4",
+              "scope": "itinerary",
+              "rank": 4,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i5",
+              "scope": "itinerary",
+              "rank": 5,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i6",
+              "scope": "itinerary",
+              "rank": 6,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i7",
+              "scope": "itinerary",
+              "rank": 7,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i8",
+              "scope": "itinerary",
+              "rank": 8,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i9",
+              "scope": "itinerary",
+              "rank": 9,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i10",
+              "scope": "itinerary",
+              "rank": 10,
+              "matchesAllPreferences": false,
+              "tags": []
+            },
+            {
+              "id": "i11",
+              "scope": "itinerary",
+              "rank": 11,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "visible: refreshing between a new round and its first explain frame",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "pool": { "size": 10, "complete": false },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 },
+        { "kind": "ExplainFrame", "epoch": 2, "text": "Ranked for non-stop." },
+        { "kind": "PoolChanged", "pool": { "size": 20, "complete": false } }
+      ],
+      "inputs": [{ "kind": "TimerFired", "timer": "chunk", "epoch": 2 }],
+      "expect": {
+        "state": { "bannerMode": "explanation", "explanationEpoch": 2, "epoch": 3 },
+        "select": { "banner": "refreshing" }
+      }
+    },
+    {
+      "name": "visible: the new explain frame ends the refresh",
+      "rules": [],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "pool": { "size": 10, "complete": false },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"] },
+          "chips": [{ "id": "c-stops", "label": "Non-stop", "group": "stops_preference" }],
+          "notice": null
+        },
+        {
+          "kind": "RankingFrame",
+          "epoch": 2,
+          "ranking": [
+            {
+              "id": "r1",
+              "scope": "itinerary",
+              "rank": 0,
+              "matchesAllPreferences": true,
+              "tags": []
+            }
+          ]
+        },
+        { "kind": "TimerFired", "timer": "explain", "epoch": 2 },
+        { "kind": "ExplainFrame", "epoch": 2, "text": "Ranked for non-stop." },
+        { "kind": "PoolChanged", "pool": { "size": 20, "complete": false } },
+        { "kind": "TimerFired", "timer": "chunk", "epoch": 2 }
+      ],
+      "inputs": [{ "kind": "ExplainFrame", "epoch": 3, "text": "Re-ranked for non-stop." }],
+      "expect": { "state": { "explanationEpoch": 3 }, "select": { "banner": "explanation" } }
+    },
+    {
+      "name": "rule 4: removing a chip while the pool is not ready parks the re-ask",
+      "rules": [4],
+      "search": {
+        "product": "flight",
+        "searchId": "s1",
+        "tripType": "oneway",
+        "origin": "RUH",
+        "destination": "DXB",
+        "departureDate": "2026-11-01",
+        "pax": { "adults": 1, "children": 0, "infants": 0 }
+      },
+      "pool": { "size": 20, "complete": false },
+      "setup": [
+        { "kind": "Ask", "text": "non-stop emirates" },
+        {
+          "kind": "AskResponse",
+          "epoch": 2,
+          "entities": { "stops_preference": ["0"], "preferred_airlines": ["Emirates"] },
+          "chips": [
+            { "id": "c-stops", "label": "Non-stop", "group": "stops_preference" },
+            { "id": "c-ek", "label": "Emirates", "group": "preferred_airlines" }
+          ],
+          "notice": null
+        },
+        { "kind": "PoolChanged", "pool": { "size": 0, "complete": false } }
+      ],
+      "inputs": [{ "kind": "RemoveChip", "id": "c-ek" }],
+      "expect": {
+        "state": {
+          "epoch": 3,
+          "query": "Non-stop",
+          "pendingAsk": "Non-stop",
+          "bannerMode": "hidden",
+          "pendingConfirm": null
+        },
+        "commands": [
+          { "kind": "CancelInFlight", "scope": "all" },
+          { "kind": "CancelTimer", "timer": "all" }
+        ]
+      }
+    }
+  ]
+}

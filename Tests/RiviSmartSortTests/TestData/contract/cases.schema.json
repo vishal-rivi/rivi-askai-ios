@@ -1,0 +1,472 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rivi.co/schemas/smart-sort/cases.schema.json",
+  "title": "Smart Sort conformance cases",
+  "description": "The shared behaviour corpus. Every platform's reconcile() must reproduce every case.",
+  "type": "object",
+  "required": ["contractVersion", "cases"],
+  "additionalProperties": false,
+  "properties": {
+    "contractVersion": { "type": "integer", "minimum": 1 },
+    "cases": { "type": "array", "items": { "$ref": "#/$defs/Case" } }
+  },
+  "$defs": {
+    "SortMode": { "enum": ["best", "other"] },
+    "Stage": { "enum": ["onward", "return"] },
+    "BannerMode": { "enum": ["hidden", "loading", "explanation", "fallback"] },
+    "BannerView": {
+      "enum": ["hidden", "loading", "refreshing", "conflict", "explanation", "fallback"]
+    },
+    "Timer": { "enum": ["chunk", "explain", "settle"] },
+    "Epoch": { "type": "integer", "minimum": 0 },
+    "Entities": { "type": "object" },
+    "Pool": {
+      "type": "object",
+      "required": ["size", "complete"],
+      "additionalProperties": false,
+      "properties": {
+        "size": { "type": "integer", "minimum": 0 },
+        "complete": { "type": "boolean" }
+      }
+    },
+    "Search": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "product",
+            "searchId",
+            "tripType",
+            "origin",
+            "destination",
+            "departureDate",
+            "pax"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "product": { "const": "flight" },
+            "searchId": { "type": "string" },
+            "tripType": { "enum": ["oneway", "round", "multicity"] },
+            "origin": { "type": "string" },
+            "destination": { "type": "string" },
+            "departureDate": { "type": "string" },
+            "returnDate": { "type": "string" },
+            "cabin": { "enum": ["economy", "premium", "business", "first"] },
+            "pax": {
+              "type": "object",
+              "required": ["adults", "children", "infants"],
+              "additionalProperties": false,
+              "properties": {
+                "adults": { "type": "integer" },
+                "children": { "type": "integer" },
+                "infants": { "type": "integer" }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "product",
+            "searchId",
+            "tripType",
+            "destination",
+            "checkin",
+            "checkout",
+            "rooms",
+            "pax"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "product": { "const": "hotel" },
+            "searchId": { "type": "string" },
+            "tripType": { "const": "oneway" },
+            "destination": { "type": "string" },
+            "checkin": { "type": "string" },
+            "checkout": { "type": "string" },
+            "rooms": { "type": "integer" },
+            "pax": {
+              "type": "object",
+              "required": ["adults", "children"],
+              "additionalProperties": false,
+              "properties": {
+                "adults": { "type": "integer" },
+                "children": { "type": "integer" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Chip": {
+      "type": "object",
+      "required": ["id", "label", "group"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "group": { "type": "string" }
+      }
+    },
+    "RankingEntry": {
+      "type": "object",
+      "required": ["id", "scope", "rank", "matchesAllPreferences", "tags"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "scope": { "enum": ["itinerary", "onward", "return", "hotel"] },
+        "rank": { "type": "integer", "minimum": 0 },
+        "matchesAllPreferences": { "type": "boolean" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "item": {}
+      }
+    },
+    "RiviError": {
+      "type": "object",
+      "required": ["kind", "message", "retryable"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["network", "auth", "timeout", "stream", "server"] },
+        "message": { "type": "string" },
+        "retryable": { "type": "boolean" }
+      }
+    },
+    "Input": {
+      "type": "object",
+      "required": ["kind"],
+      "oneOf": [
+        { "$ref": "#/$defs/in.SetSearch" },
+        { "$ref": "#/$defs/in.SetSort" },
+        { "$ref": "#/$defs/in.SetStage" },
+        { "$ref": "#/$defs/in.SetFilters" },
+        { "$ref": "#/$defs/in.PoolChanged" },
+        { "$ref": "#/$defs/in.SetVisible" },
+        { "$ref": "#/$defs/in.Ask" },
+        { "$ref": "#/$defs/in.RemoveChip" },
+        { "$ref": "#/$defs/in.ClearAll" },
+        { "$ref": "#/$defs/in.ConfirmResolved" },
+        { "$ref": "#/$defs/in.Retry" },
+        { "$ref": "#/$defs/in.DismissError" },
+        { "$ref": "#/$defs/in.AskResponse" },
+        { "$ref": "#/$defs/in.RankingFrame" },
+        { "$ref": "#/$defs/in.ExplainFrame" },
+        { "$ref": "#/$defs/in.ExplainEnd" },
+        { "$ref": "#/$defs/in.Failed" },
+        { "$ref": "#/$defs/in.TimerFired" }
+      ]
+    },
+    "in.SetSearch": {
+      "type": "object",
+      "required": ["kind", "search"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "SetSearch" }, "search": { "$ref": "#/$defs/Search" } }
+    },
+    "in.SetSort": {
+      "type": "object",
+      "required": ["kind", "sort"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "SetSort" }, "sort": { "$ref": "#/$defs/SortMode" } }
+    },
+    "in.SetStage": {
+      "type": "object",
+      "required": ["kind", "stage"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "SetStage" }, "stage": { "$ref": "#/$defs/Stage" } }
+    },
+    "in.SetFilters": {
+      "type": "object",
+      "required": ["kind", "filters"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "SetFilters" }, "filters": {} }
+    },
+    "in.PoolChanged": {
+      "type": "object",
+      "required": ["kind", "pool"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "PoolChanged" }, "pool": { "$ref": "#/$defs/Pool" } }
+    },
+    "in.SetVisible": {
+      "type": "object",
+      "required": ["kind", "ids"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "SetVisible" },
+        "ids": { "oneOf": [{ "type": "null" }, { "type": "array", "items": { "type": "string" } }] }
+      }
+    },
+    "in.Ask": {
+      "type": "object",
+      "required": ["kind", "text"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "Ask" }, "text": { "type": "string" } }
+    },
+    "in.RemoveChip": {
+      "type": "object",
+      "required": ["kind", "id"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "RemoveChip" }, "id": { "type": "string" } }
+    },
+    "in.ClearAll": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "ClearAll" } }
+    },
+    "in.ConfirmResolved": {
+      "type": "object",
+      "required": ["kind", "accepted"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "ConfirmResolved" }, "accepted": { "type": "boolean" } }
+    },
+    "in.Retry": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "Retry" } }
+    },
+    "in.DismissError": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "DismissError" } }
+    },
+    "in.AskResponse": {
+      "type": "object",
+      "required": ["kind", "epoch", "entities", "chips", "notice"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "AskResponse" },
+        "epoch": { "$ref": "#/$defs/Epoch" },
+        "entities": { "$ref": "#/$defs/Entities" },
+        "chips": { "type": "array", "items": { "$ref": "#/$defs/Chip" } },
+        "notice": { "type": ["string", "null"] }
+      }
+    },
+    "in.RankingFrame": {
+      "type": "object",
+      "required": ["kind", "epoch", "ranking"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "RankingFrame" },
+        "epoch": { "$ref": "#/$defs/Epoch" },
+        "ranking": { "type": "array", "items": { "$ref": "#/$defs/RankingEntry" } }
+      }
+    },
+    "in.ExplainFrame": {
+      "type": "object",
+      "required": ["kind", "epoch", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "ExplainFrame" },
+        "epoch": { "$ref": "#/$defs/Epoch" },
+        "text": { "type": "string" }
+      }
+    },
+    "in.ExplainEnd": {
+      "type": "object",
+      "required": ["kind", "epoch"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "ExplainEnd" }, "epoch": { "$ref": "#/$defs/Epoch" } }
+    },
+    "in.Failed": {
+      "type": "object",
+      "required": ["kind", "epoch", "error"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "Failed" },
+        "epoch": { "$ref": "#/$defs/Epoch" },
+        "error": { "$ref": "#/$defs/RiviError" }
+      }
+    },
+    "in.TimerFired": {
+      "type": "object",
+      "required": ["kind", "timer", "epoch"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "TimerFired" },
+        "timer": { "$ref": "#/$defs/Timer" },
+        "epoch": { "$ref": "#/$defs/Epoch" }
+      }
+    },
+    "FetchRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "query"],
+          "additionalProperties": false,
+          "properties": { "kind": { "const": "ask" }, "query": { "type": "string" }, "filters": {} }
+        },
+        {
+          "type": "object",
+          "required": ["kind"],
+          "additionalProperties": false,
+          "properties": { "kind": { "const": "sortBest" }, "filters": {} }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "query", "entities"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "explain" },
+            "query": { "type": "string" },
+            "entities": { "$ref": "#/$defs/Entities" }
+          }
+        }
+      ]
+    },
+    "Command": {
+      "type": "object",
+      "required": ["kind"],
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "epoch", "request"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "Fetch" },
+            "epoch": { "$ref": "#/$defs/Epoch" },
+            "request": { "$ref": "#/$defs/FetchRequest" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "scope"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "CancelInFlight" },
+            "scope": { "enum": ["all", "explain"] }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "timer", "ms", "epoch"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "StartTimer" },
+            "timer": { "$ref": "#/$defs/Timer" },
+            "ms": { "type": "integer", "minimum": 0 },
+            "epoch": { "$ref": "#/$defs/Epoch" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "timer"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "CancelTimer" },
+            "timer": { "enum": ["chunk", "explain", "settle", "all"] }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind"],
+          "additionalProperties": false,
+          "properties": { "kind": { "const": "RankingCleared" } }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "sort"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "ConfirmSortChange" },
+            "sort": { "$ref": "#/$defs/SortMode" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "sort"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "SortChanged" },
+            "sort": { "$ref": "#/$defs/SortMode" }
+          }
+        }
+      ]
+    },
+    "StateExpectation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "search": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/Search" }] },
+        "available": { "type": "boolean" },
+        "stage": { "$ref": "#/$defs/Stage" },
+        "sort": { "$ref": "#/$defs/SortMode" },
+        "pool": { "oneOf": [{ "const": "rivi" }, { "$ref": "#/$defs/Pool" }] },
+        "query": { "type": "string" },
+        "chips": { "type": "array", "items": { "$ref": "#/$defs/Chip" } },
+        "entities": { "$ref": "#/$defs/Entities" },
+        "notice": { "type": ["string", "null"] },
+        "ranking": { "type": "array", "items": { "$ref": "#/$defs/RankingEntry" } },
+        "rankingStatus": { "enum": ["none", "provisional", "final"] },
+        "bannerMode": { "$ref": "#/$defs/BannerMode" },
+        "explanation": { "type": "string" },
+        "explanationEpoch": { "type": ["integer", "null"] },
+        "visible": {
+          "oneOf": [{ "type": "null" }, { "type": "array", "items": { "type": "string" } }]
+        },
+        "filters": {},
+        "pendingAsk": { "type": ["string", "null"] },
+        "pendingConfirm": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/SortMode" }] },
+        "epoch": { "$ref": "#/$defs/Epoch" },
+        "rankedEpoch": { "type": ["integer", "null"] },
+        "explainedEpoch": { "type": ["integer", "null"] },
+        "error": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/RiviError" }] }
+      }
+    },
+    "SelectExpectation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "chipsVisible": { "type": "boolean" },
+        "bannerVisible": { "type": "boolean" },
+        "ranking": { "type": "array", "items": { "$ref": "#/$defs/RankingEntry" } },
+        "visibleRanking": { "type": "array", "items": { "$ref": "#/$defs/RankingEntry" } },
+        "hiddenMatches": { "type": "array", "items": { "type": "string" } },
+        "banner": { "$ref": "#/$defs/BannerView" },
+        "inputValue": {
+          "type": "object",
+          "required": ["text", "chips"],
+          "additionalProperties": false,
+          "properties": {
+            "text": { "type": "string" },
+            "chips": { "type": "array", "items": { "$ref": "#/$defs/Chip" } }
+          }
+        }
+      }
+    },
+    "Case": {
+      "type": "object",
+      "required": ["name", "rules", "setup", "inputs", "expect"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "rules": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1, "maximum": 18 }
+        },
+        "search": { "$ref": "#/$defs/Search" },
+        "pool": { "$ref": "#/$defs/Pool" },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "chunkCoalesceMs": { "type": "integer", "minimum": 0 },
+            "explainDebounceMs": { "type": "integer", "minimum": 0 },
+            "settleMs": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "setup": { "type": "array", "items": { "$ref": "#/$defs/Input" } },
+        "inputs": { "type": "array", "items": { "$ref": "#/$defs/Input" } },
+        "expect": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": { "$ref": "#/$defs/StateExpectation" },
+            "commands": { "type": "array", "items": { "$ref": "#/$defs/Command" } },
+            "select": { "$ref": "#/$defs/SelectExpectation" }
+          }
+        }
+      }
+    }
+  }
+}

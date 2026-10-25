@@ -1,0 +1,14 @@
+{
+  "star_rating": [0, 4, 5],
+  "preferred_user_rating": "8+",
+  "stay_budget": "200 USD",
+  "amenities": ["pool", "spa"],
+  "accommodation_type": "resort",
+  "preferred_room_type": ["suite"],
+  "preferred_hotel_names": ["Atlantis"],
+  "preferred_stay_location": "the beach",
+  "preferred_hotel_brand": ["Marriott"],
+  "other_stay_preferences": ["quiet"],
+  "in_policy_only": true,
+  "recommended_hotel_names": ["Burj Al Arab"]
+}

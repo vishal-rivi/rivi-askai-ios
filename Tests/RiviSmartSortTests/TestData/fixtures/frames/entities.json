@@ -1,0 +1,11 @@
+{
+  "content": {
+    "entities": [
+      {
+        "stops_preference": ["0"],
+        "preferred_departure_time": ["morning"],
+        "parameter_change_notice": "Your prompt includes changes to trip details"
+      }
+    ]
+  }
+}

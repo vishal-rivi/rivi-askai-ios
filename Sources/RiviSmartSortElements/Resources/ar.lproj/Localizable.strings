@@ -1,0 +1,107 @@
+/* Arabic Localizations */
+
+/* RiviAskButton */
+"ask_button_text" = "اسأل الذكاء الاصطناعي";
+
+/* RiviSpotlightBanner */
+"first_time_banner_title" = "صف رحلتك المثالية";
+"first_time_banner_description" = "يقوم الذكاء الاصطناعي بترتيب النتائج بذكاء لإعطاء الأولوية لتفضيلاتك - دون تصفية النتائج.";
+"first_time_banner_cta" = "هيا بنا!";
+
+/* RiviAskSheet */
+"ask_sheet_title" = "اسأل الذكاء الاصطناعي";
+"ask_sheet_placeholder_hotel" = "مثال: فنادق 4 نجوم بالقرب من المطار مع إفطار مجاني";
+"ask_sheet_placeholder_flight" = "مثال: رحلات مباشرة تصل قبل الساعة 4 مساءً مع وجبات";
+"ask_sheet_submit_button" = "تحسين النتائج";
+"ask_sheet_clear_button" = "مسح الكل";
+"ask_sheet_tooltip_hotel" = "يقوم الذكاء الاصطناعي بترتيب الفنادق بذكاء لإعطاء الأولوية لتفضيلاتك - دون تصفية النتائج. قد يرتكب الذكاء الاصطناعي أخطاء. يرجى مراجعة جميع التفاصيل بعناية قبل الحجز";
+"ask_sheet_tooltip_flight" = "يقوم الذكاء الاصطناعي بترتيب الرحلات بذكاء لإعطاء الأولوية لتفضيلاتك - دون تصفية النتائج. قد يرتكب الذكاء الاصطناعي أخطاء. يرجى مراجعة جميع التفاصيل بعناية قبل الحجز";
+
+/* RiviInfoBanner */
+"info_banner_title" = "نتائج مرتبة بالذكاء الاصطناعي";
+"info_banner_description" = "يتم ترتيب النتائج بذكاء بناءً على تفضيلاتك";
+
+/* RiviAlertDialog */
+"alert_dialog_title" = "تم اكتشاف تغيير في المعاملات";
+"alert_dialog_description" = "يتضمن طلبك تغييرات في تفاصيل الرحلة. لتحديث تفاصيل الرحلة، استخدم حقول البحث أعلاه.";
+"alert_dialog_button" = "حسناً";
+
+/* Parameter Change Warning */
+"parameter_change_warning_title" = "يتضمن طلبك تغييرات في تفاصيل الرحلة";
+"parameter_change_warning_description" = "لتحديث تفاصيل الرحلة، استخدم حقول البحث أعلاه.";
+
+/* RiviConfirmationDialog */
+"clear_query_dialog_title" = "مسح استعلام الذكاء الاصطناعي";
+"clear_query_dialog_description" = "سيتم مسح استعلامك النشط لتغيير الترتيب. هل تريد المتابعة؟";
+"clear_query_dialog_cancel" = "رجوع";
+"clear_query_dialog_confirm" = "متابعة";
+
+/* RiviChipsView */
+"chips_clear_all_button" = "مسح الكل";
+
+/* SmartSortBottomSheet and SmartSortV2BottomSheet */
+"smart_sort_sheet_title" = "الترتيب الذكي";
+"smart_sort_sheet_submit_button" = "تحسين النتائج";
+"smart_sort_sheet_prompt_hotel" = "صف إقامتك المثالية وسنرتب الفنادق الأكثر صلة في الأولوية.";
+"smart_sort_sheet_prompt_flight" = "صف رحلتك المثالية وسنرتب الرحلات الأكثر صلة في الأولوية.";
+"smart_sort_sheet_placeholder_hotel" = "مثال: فندق فاخر هادئ مع سبا";
+"smart_sort_sheet_placeholder_flight" = "مثال: رحلات صباحية مباشرة مع وجبات";
+"smart_sort_sheet_close_accessibility" = "إغلاق";
+"smart_sort_sheet_info_accessibility" = "مزيد من المعلومات";
+
+/* Smart Sort V2 */
+"smart_sort_twinkle_count_accessibility" = "%d تفضيلات نشطة";
+"smart_sort_v2_description_flight" = "شارك تفضيلاتك. سيرتب الذكاء الاصطناعي الرحلات ويوضح المفاضلات بينها.";
+"smart_sort_v2_description_hotel" = "شارك تفضيلاتك. سيرتب الذكاء الاصطناعي الفنادق ويوضح المفاضلات بينها.";
+"smart_sort_v2_placeholder_flight" = "مثال: أفضّل رحلة مباشرة إذا كان السعر مناسبًا";
+"smart_sort_v2_placeholder_hotel" = "مثال: غرفة هادئة قريبة من الشاطئ";
+"smart_sort_v2_suggestion_flight_1" = "أفضّل رحلة مباشرة إذا كان السعر مناسبًا";
+"smart_sort_v2_suggestion_flight_2" = "المغادرة بعد العمل";
+"smart_sort_v2_suggestion_flight_3" = "تجنب التوقف الطويل";
+"smart_sort_v2_suggestion_flight_4" = "أفضّل الخطوط السعودية ما لم تكن مكلفة";
+"smart_sort_v2_suggestion_hotel_1" = "تقييم مرتفع وعدد كبير من المراجعات";
+"smart_sort_v2_suggestion_hotel_2" = "قريب من وسط المدينة إذا كان السعر مناسبًا";
+"smart_sort_v2_suggestion_hotel_3" = "4 نجوم أو أكثر مع مسبح";
+"smart_sort_v2_suggestion_hotel_4" = "شائع مع إلغاء مجاني";
+"smart_sort_v2_submit_button" = "تحسين النتائج";
+"smart_sort_v2_error" = "تعذّر تحديث النتائج. لم تتغير عوامل التصفية لديك.";
+"smart_sort_v2_retry_button" = "حاول مرة أخرى";
+
+/* Smart Sort prompt cards */
+"smart_sort_prompt_result_title" = "لست متأكدًا أيها تختار؟";
+"smart_sort_prompt_result_description_flight" = "صف ما تريده. سيرتب الذكاء الاصطناعي الرحلات ويوضح المفاضلات بينها.";
+"smart_sort_prompt_result_description_hotel" = "صف ما تريده. سيرتب الذكاء الاصطناعي الفنادق ويوضح المفاضلات بينها.";
+"smart_sort_prompt_example_prefix" = "مثال: ";
+"smart_sort_prompt_example_flight_1" = "المغادرة بعد العمل والوصول قبل منتصف الليل";
+"smart_sort_prompt_example_flight_2" = "رخيصة، لكن دون توقفات طويلة";
+"smart_sort_prompt_example_flight_3" = "رحلة صباحية، ويفضل أن تكون مباشرة";
+"smart_sort_prompt_example_flight_4" = "لا مبكرة جدًا ولا متأخرة جدًا من فضلك";
+"smart_sort_prompt_example_flight_5" = "أفضل قيمة مع حقيبة مسجلة";
+"smart_sort_prompt_example_hotel_1" = "غرفة هادئة بإطلالة جميلة";
+"smart_sort_prompt_example_hotel_2" = "قريب من الشاطئ";
+"smart_sort_prompt_example_hotel_3" = "إفطار وموقف سيارات مجانًا";
+"smart_sort_prompt_example_hotel_4" = "أفضل قيمة للعائلة";
+"smart_sort_prompt_example_hotel_5" = "على مسافة قريبة سيرًا من وسط المدينة";
+"smart_sort_prompt_open_accessibility" = "يفتح الترتيب الذكي";
+"smart_sort_prompt_dismiss_accessibility" = "إغلاق";
+"smart_sort_prompt_filter_text_flight" = "صف ما تريده وسيرتب الذكاء الاصطناعي الرحلات لك.";
+"smart_sort_prompt_filter_text_hotel" = "صف ما تريده وسيرتب الذكاء الاصطناعي الفنادق لك.";
+"smart_sort_prompt_filter_button" = "جرّب الترتيب الذكي";
+
+/* Smart Sort V2 banner */
+"smart_sort_v2_banner_title" = "مرتبة حسب تفضيلاتك";
+"smart_sort_v2_banner_edit" = "تعديل";
+"smart_sort_v2_banner_clear_accessibility" = "مسح الترتيب الذكي";
+"smart_sort_v2_banner_loading_accessibility" = "جارٍ تحديث الشرح";
+"smart_sort_v2_banner_why_flight" = "لماذا نوصي بهذه الرحلات";
+"smart_sort_v2_banner_why_hotel" = "لماذا نوصي بهذه الفنادق";
+"smart_sort_v2_banner_explaining" = "جارٍ شرح أفضل الخيارات…";
+"smart_sort_v2_banner_expanded_accessibility" = "موسّع";
+"smart_sort_v2_banner_collapsed_accessibility" = "مطوي";
+"smart_sort_v2_filters_hiding_flight" = "عوامل التصفية لديك تخفي بعض الرحلات الموصى بها.";
+"smart_sort_v2_filters_hiding_hotel" = "عوامل التصفية لديك تخفي بعض الفنادق الموصى بها.";
+"smart_sort_v2_filters_hiding_matches_flight" = "عوامل التصفية لديك تخفي الرحلات التي طلبتها.";
+"smart_sort_v2_filters_hiding_matches_hotel" = "عوامل التصفية لديك تخفي الفنادق التي طلبتها.";
+"smart_sort_v2_clear_filters" = "مسح عوامل التصفية";
+"smart_sort_v2_filters_note_flight" = "سيتم الآن استخدام عوامل التصفية لديك (%@) لترتيب الرحلات.";
+"smart_sort_v2_filters_note_hotel" = "سيتم الآن استخدام عوامل التصفية لديك (%@) لترتيب الفنادق.";

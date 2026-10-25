@@ -1,0 +1,13 @@
+{
+  "source": "rivi-client-react@feat-smart-sort-web (cases, schema, i18n); eed7b86b122d6bc44b01bb7b89205a9fdc37cbc0 (rules, tokens, tenants)",
+  "files": {
+    "Sources/RiviSmartSortContract/Resources/smart-sort/rules.json": "683175dac6cb2c36495272725616f7b834c393eac55444620055ae2bc5c9b743",
+    "Sources/RiviSmartSortContract/Resources/smart-sort/tokens.json": "64807aae81b0c83e814c8ebfda96f0aed8eccdbb88841cf59922107ad767ff52",
+    "Sources/RiviSmartSortContract/Resources/smart-sort/i18n/en.json": "fcd4049107cbb4bce1c10fe09e2199835832209e36a9c71e25a04b660563de11",
+    "Sources/RiviSmartSortContract/Resources/smart-sort/i18n/ar.json": "774ed98f6b3396868331111060dfbded5e0593282b7e8fc5746d6d4e8d1f6282",
+    "Tests/RiviSmartSortTests/TestData/contract/cases.json": "30a9259030671e5e3ef4360eb41dbf52635a093bd8660998964941a730fd5034",
+    "Tests/RiviSmartSortTests/TestData/contract/cases.schema.json": "246a5e63b091659d4214c0cbad7f07470632fbfebf6ed4a0bdd46166fe357675",
+    "tenants/almatar.json": "d0f010c9eb5441add34966ce7ff31f096ba3e9d22f71c36562eab6404108ec7d",
+    "tenants/sandbox.json": "5375be2f18f46ae850ead505c875aee3baacc334744da22f9b392f253630ba91"
+  }
+}

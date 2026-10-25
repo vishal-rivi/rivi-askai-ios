@@ -1,0 +1,107 @@
+/* English Localizations */
+
+/* RiviAskButton */
+"ask_button_text" = "Ask AI";
+
+/* RiviSpotlightBanner */
+"first_time_banner_title" = "Describe your ideal trip";
+"first_time_banner_description" = "AI intelligently sorts results to prioritize your preferences - without filtering results.";
+"first_time_banner_cta" = "Let's Go!";
+
+/* RiviAskSheet */
+"ask_sheet_title" = "Smart Sort";
+"ask_sheet_placeholder_hotel" = "e.g. 4 star hotels near the airport with free breakfast";
+"ask_sheet_placeholder_flight" = "e.g. Direct flights that reach before 4PM with meals included";
+"ask_sheet_submit_button" = "Improve Results";
+"ask_sheet_clear_button" = "Clear All";
+"ask_sheet_tooltip_hotel" = "AI intelligently sorts hotels to prioritize your preferences - without filtering results. AI may make mistakes. Please review all details carefully before booking";
+"ask_sheet_tooltip_flight" = "AI intelligently sorts flights to prioritize your preferences - without filtering results. AI may make mistakes. Please review all details carefully before booking";
+
+/* RiviInfoBanner */
+"info_banner_title" = "AI-sorted results";
+"info_banner_description" = "Results are intelligently sorted based on your preferences";
+
+/* RiviAlertDialog */
+"alert_dialog_title" = "Parameter Change Detected";
+"alert_dialog_description" = "Your prompt includes changes to trip details. To update trip details, use the search fields above.";
+"alert_dialog_button" = "Got it";
+
+/* Parameter Change Warning */
+"parameter_change_warning_title" = "Your prompt includes changes to trip details";
+"parameter_change_warning_description" = "To update trip details, use the search fields above.";
+
+/* RiviConfirmationDialog */
+"clear_query_dialog_title" = "Clear Ask AI Query";
+"clear_query_dialog_description" = "Your active query will be cleared in order to change the sorting. Do you wish to proceed?";
+"clear_query_dialog_cancel" = "Back";
+"clear_query_dialog_confirm" = "Proceed";
+
+/* RiviChipsView */
+"chips_clear_all_button" = "Clear all";
+
+/* SmartSortBottomSheet and SmartSortV2BottomSheet */
+"smart_sort_sheet_title" = "Smart Sort";
+"smart_sort_sheet_submit_button" = "Improve results";
+"smart_sort_sheet_prompt_hotel" = "Describe your ideal stay and we'll prioritize the most relevant hotels.";
+"smart_sort_sheet_prompt_flight" = "Describe your ideal trip and we'll prioritize the most relevant flights.";
+"smart_sort_sheet_placeholder_hotel" = "e.g.: Quiet luxury hotel with spa";
+"smart_sort_sheet_placeholder_flight" = "e.g.: Direct morning flights with meals";
+"smart_sort_sheet_close_accessibility" = "Close";
+"smart_sort_sheet_info_accessibility" = "More info";
+
+/* Smart Sort V2 */
+"smart_sort_twinkle_count_accessibility" = "%d active preferences";
+"smart_sort_v2_description_flight" = "Share your preferences. AI will rank flights and explain the trade-offs.";
+"smart_sort_v2_description_hotel" = "Share your preferences. AI will rank hotels and explain the trade-offs.";
+"smart_sort_v2_placeholder_flight" = "e.g. Prefer nonstop if price is good";
+"smart_sort_v2_placeholder_hotel" = "e.g. Quiet room close to the beach";
+"smart_sort_v2_suggestion_flight_1" = "Prefer nonstop if price is good";
+"smart_sort_v2_suggestion_flight_2" = "Depart after work";
+"smart_sort_v2_suggestion_flight_3" = "Avoid long layover";
+"smart_sort_v2_suggestion_flight_4" = "Favor Saudia unless expensive";
+"smart_sort_v2_suggestion_hotel_1" = "Highly rated, lots of reviews";
+"smart_sort_v2_suggestion_hotel_2" = "Near the city center if price is good";
+"smart_sort_v2_suggestion_hotel_3" = "4 stars or more with a pool";
+"smart_sort_v2_suggestion_hotel_4" = "Popular with free cancellation";
+"smart_sort_v2_submit_button" = "Improve Results";
+"smart_sort_v2_error" = "Couldn't update results. Your filters haven't changed.";
+"smart_sort_v2_retry_button" = "Try again";
+
+/* Smart Sort prompt cards */
+"smart_sort_prompt_result_title" = "Not sure which one to pick?";
+"smart_sort_prompt_result_description_flight" = "Describe what you want. AI will rank flights and explain the trade-offs.";
+"smart_sort_prompt_result_description_hotel" = "Describe what you want. AI will rank hotels and explain the trade-offs.";
+"smart_sort_prompt_example_prefix" = "e.g. ";
+"smart_sort_prompt_example_flight_1" = "Leave after work and land before midnight";
+"smart_sort_prompt_example_flight_2" = "Cheap, but no long layovers";
+"smart_sort_prompt_example_flight_3" = "Morning flight, ideally direct";
+"smart_sort_prompt_example_flight_4" = "Nothing too early or too late, please";
+"smart_sort_prompt_example_flight_5" = "Best value with a checked bag";
+"smart_sort_prompt_example_hotel_1" = "Quiet room with a good view";
+"smart_sort_prompt_example_hotel_2" = "Close to the beach";
+"smart_sort_prompt_example_hotel_3" = "Free breakfast and parking";
+"smart_sort_prompt_example_hotel_4" = "Best value for a family";
+"smart_sort_prompt_example_hotel_5" = "Walking distance to the center";
+"smart_sort_prompt_open_accessibility" = "Opens Smart Sort";
+"smart_sort_prompt_dismiss_accessibility" = "Dismiss";
+"smart_sort_prompt_filter_text_flight" = "Describe what you want and AI will rank flights for you.";
+"smart_sort_prompt_filter_text_hotel" = "Describe what you want and AI will rank hotels for you.";
+"smart_sort_prompt_filter_button" = "Try Smart Sort";
+
+/* Smart Sort V2 banner */
+"smart_sort_v2_banner_title" = "Ranked by your preferences";
+"smart_sort_v2_banner_edit" = "Edit";
+"smart_sort_v2_banner_clear_accessibility" = "Clear Smart Sort";
+"smart_sort_v2_banner_loading_accessibility" = "Updating explanation";
+"smart_sort_v2_banner_why_flight" = "Why these flights are recommended";
+"smart_sort_v2_banner_why_hotel" = "Why these hotels are recommended";
+"smart_sort_v2_banner_explaining" = "Explaining top picks…";
+"smart_sort_v2_banner_expanded_accessibility" = "Expanded";
+"smart_sort_v2_banner_collapsed_accessibility" = "Collapsed";
+"smart_sort_v2_filters_hiding_flight" = "Your filters are hiding some recommended flights.";
+"smart_sort_v2_filters_hiding_hotel" = "Your filters are hiding some recommended hotels.";
+"smart_sort_v2_filters_hiding_matches_flight" = "Your filters are hiding the flights you asked for.";
+"smart_sort_v2_filters_hiding_matches_hotel" = "Your filters are hiding the hotels you asked for.";
+"smart_sort_v2_clear_filters" = "Clear Filters";
+"smart_sort_v2_filters_note_flight" = "Your filters (%@) will now be used to rank flights.";
+"smart_sort_v2_filters_note_hotel" = "Your filters (%@) will now be used to rank hotels.";

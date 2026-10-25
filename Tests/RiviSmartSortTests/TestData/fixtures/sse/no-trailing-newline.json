@@ -1,0 +1,12 @@
+{
+  "name": "no-trailing-newline",
+  "stream": "explain",
+  "product": "flight",
+  "connections": [
+    {
+      "text": "data: {\"content\":\"We sorted\"}\ndata: {\"content\":\"We sorted these flights\"}",
+      "end": "close"
+    }
+  ],
+  "frames": [{ "content": "We sorted" }, { "content": "We sorted these flights" }]
+}

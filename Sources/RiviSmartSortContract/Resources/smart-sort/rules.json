@@ -1,0 +1,190 @@
+{
+  "rulesVersion": 1,
+  "flight": [
+    { "key": "preferred_airlines", "shape": "list", "labelKey": null, "group": "airline" },
+    {
+      "key": "not_preferred_airlines",
+      "shape": "list",
+      "labelKey": "chip.airlineExcluded",
+      "group": "airline"
+    },
+    {
+      "key": "trip_duration",
+      "shape": "scalar",
+      "labelKey": "chip.tripDuration",
+      "group": "duration"
+    },
+    {
+      "key": "preferred_departure_time",
+      "shape": "join",
+      "labelKey": "chip.departure",
+      "group": "time"
+    },
+    {
+      "key": "preferred_arrival_time",
+      "shape": "join",
+      "labelKey": "chip.arrival",
+      "group": "time"
+    },
+    { "key": "preferred_return_time", "shape": "join", "labelKey": "chip.return", "group": "time" },
+    {
+      "key": "stops_preference",
+      "shape": "list",
+      "labelKey": "chip.stops",
+      "format": { "plural": "n" },
+      "group": "stops"
+    },
+    {
+      "key": "preferred_flight_duration",
+      "shape": "scalar",
+      "labelKey": "chip.flightDuration",
+      "group": "duration"
+    },
+    {
+      "key": "preferred_layover_airport_or_city",
+      "shape": "list",
+      "labelKey": "chip.layoverAt",
+      "group": "layover"
+    },
+    {
+      "key": "not_preferred_layover_airport",
+      "shape": "list",
+      "labelKey": "chip.layoverExcluded",
+      "group": "layover"
+    },
+    {
+      "key": "preferred_layover_duration",
+      "shape": "scalar",
+      "labelKey": "chip.layoverDuration",
+      "group": "layover"
+    },
+    {
+      "key": "avoid_overnight_layover",
+      "shape": "flag",
+      "labelKey": "chip.avoidOvernightLayover",
+      "group": "layover"
+    },
+    {
+      "key": "checked_baggage_weight_preference",
+      "shape": "list",
+      "labelKey": "chip.baggageWeight",
+      "group": "baggage"
+    },
+    {
+      "key": "flight_budget",
+      "shape": "scalar",
+      "labelKey": "chip.budget",
+      "currencyKey": "budget_currency",
+      "group": "budget"
+    },
+    { "key": "in_policy_only", "shape": "flag", "labelKey": "chip.inPolicy", "group": "policy" },
+    { "key": "flight_amenities", "shape": "list", "labelKey": null, "group": "amenities" },
+    {
+      "key": "preferred_departure_airport",
+      "shape": "join",
+      "labelKey": "chip.departureAirport",
+      "group": "airport"
+    },
+    {
+      "key": "preferred_arrival_airport",
+      "shape": "join",
+      "labelKey": "chip.arrivalAirport",
+      "group": "airport"
+    },
+    {
+      "key": "not_preferred_departure_airport",
+      "shape": "join",
+      "labelKey": "chip.departureAirportExcluded",
+      "group": "airport"
+    },
+    {
+      "key": "not_preferred_arrival_airport",
+      "shape": "join",
+      "labelKey": "chip.arrivalAirportExcluded",
+      "group": "airport"
+    },
+    { "key": "other_flight_preferences", "shape": "list", "labelKey": null, "group": "other" }
+  ],
+  "hotel": [
+    {
+      "key": "star_rating",
+      "shape": "list",
+      "labelKey": "chip.stars",
+      "format": { "plural": "n" },
+      "group": "stars"
+    },
+    {
+      "key": "preferred_user_rating",
+      "shape": "scalar",
+      "labelKey": "chip.userRating",
+      "group": "rating"
+    },
+    {
+      "key": "stay_budget",
+      "shape": "scalar",
+      "labelKey": "chip.budget",
+      "currencyKey": "budget_currency",
+      "group": "budget"
+    },
+    { "key": "amenities", "shape": "list", "labelKey": null, "group": "amenities" },
+    {
+      "key": "accommodation_type",
+      "shape": "scalar",
+      "labelKey": "chip.accommodationType",
+      "group": "accommodation"
+    },
+    { "key": "preferred_room_type", "shape": "list", "labelKey": null, "group": "room" },
+    { "key": "preferred_hotel_names", "shape": "list", "labelKey": null, "group": "hotel" },
+    {
+      "key": "preferred_stay_location",
+      "shape": "list",
+      "labelKey": "chip.near",
+      "group": "location"
+    },
+    { "key": "preferred_hotel_brand", "shape": "list", "labelKey": null, "group": "brand" },
+    { "key": "other_stay_preferences", "shape": "list", "labelKey": null, "group": "other" },
+    { "key": "in_policy_only", "shape": "flag", "labelKey": "chip.inPolicy", "group": "policy" },
+    {
+      "key": "not_preferred_hotel_names",
+      "shape": "list",
+      "labelKey": "chip.hotelExcluded",
+      "group": "hotel"
+    },
+    {
+      "key": "not_preferred_stay_location",
+      "shape": "list",
+      "labelKey": "chip.locationExcluded",
+      "group": "location"
+    },
+    {
+      "key": "not_preferred_hotel_brand",
+      "shape": "list",
+      "labelKey": "chip.brandExcluded",
+      "group": "brand"
+    },
+    {
+      "key": "not_preferred_amenities",
+      "shape": "list",
+      "labelKey": "chip.amenityExcluded",
+      "group": "amenities"
+    },
+    {
+      "key": "not_preferred_accommodation_type",
+      "shape": "list",
+      "labelKey": "chip.accommodationTypeExcluded",
+      "group": "accommodation"
+    },
+    {
+      "key": "not_preferred_room_type",
+      "shape": "list",
+      "labelKey": "chip.roomTypeExcluded",
+      "group": "room"
+    },
+    {
+      "key": "not_preferred_stay_preferences",
+      "shape": "list",
+      "labelKey": "chip.stayPreferenceExcluded",
+      "group": "other"
+    }
+  ]
+}

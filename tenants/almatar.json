@@ -1,0 +1,8 @@
+{
+  "name": "almatar",
+  "tier": "basic",
+  "environments": {
+    "staging": { "baseUrl": "https://askai-gateway-staging.rivi.co" },
+    "production": { "baseUrl": "https://askai-gateway.rivi.co" }
+  }
+}

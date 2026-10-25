@@ -1,0 +1,6 @@
+{
+  "data": [
+    { "id": "22824606", "name": "Hotel One", "allPreferencesMet": true },
+    { "id": "345346103", "name": "Hotel Two", "allPreferencesMet": false }
+  ]
+}

@@ -1,0 +1,7 @@
+[
+  { "content": "We sorted these flights" },
+  { "content": "We sorted these flights based on your preference for morning departures." },
+  { "content": "" },
+  { "requestId": "abc" },
+  { "done": true }
+]

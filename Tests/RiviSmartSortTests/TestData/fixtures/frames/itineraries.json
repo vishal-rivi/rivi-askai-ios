@@ -1,0 +1,16 @@
+{
+  "data": {
+    "itineraries": {
+      "026ea155-4bf8-498a-96f5-cd0b83e482d7~FCAI": {
+        "recommendationTagList": ["Recommended", "Non stop"],
+        "recommendationTag": "Recommended"
+      },
+      "6b18d609-4915-47b7-beef-eaec8903eb50": {
+        "recommendationTagList": ["Cheapest"],
+        "recommendationTag": "",
+        "allPreferencesMet": false
+      },
+      "026ea155-4bf8-498a-96f5-cd0b83e482d7~MCAI": {}
+    }
+  }
+}

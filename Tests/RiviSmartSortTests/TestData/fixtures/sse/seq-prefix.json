@@ -1,0 +1,22 @@
+{
+  "name": "seq-prefix",
+  "stream": "ranking",
+  "product": "flight",
+  "connections": [
+    {
+      "text": "data: 1{\"requestId\":\"req-1\"}\ndata: 2{\"data\":{\"itineraries\":{\"IT-B\":{\"recommendationTagList\":[\"cheapest\"]},\"IT-A\":{\"recommendationTagList\":[]}}}}\n",
+      "end": "hold"
+    }
+  ],
+  "frames": [
+    { "requestId": "req-1" },
+    {
+      "data": {
+        "itineraries": {
+          "IT-B": { "recommendationTagList": ["cheapest"] },
+          "IT-A": { "recommendationTagList": [] }
+        }
+      }
+    }
+  ]
+}

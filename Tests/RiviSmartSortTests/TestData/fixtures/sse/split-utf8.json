@@ -1,0 +1,13 @@
+{
+  "name": "split-utf8",
+  "stream": "explain",
+  "product": "flight",
+  "connections": [
+    {
+      "text": "data: {\"content\":\"رتّبنا\"}\ndata: {\"content\":\"رتّبنا الرحلات حسب طلبك\"}\n",
+      "splitAt": [19, 52, 93],
+      "end": "close"
+    }
+  ],
+  "frames": [{ "content": "رتّبنا" }, { "content": "رتّبنا الرحلات حسب طلبك" }]
+}
