@@ -12,3 +12,5 @@ DerivedData/
 /.tenant-build
 .env
 build/
+# Xcode index cache
+-Xcc/
